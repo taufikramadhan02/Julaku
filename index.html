@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Admin Jula-Jula</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f5f4f1;--surface:#fff;--surface2:#f0efe9;--border:rgba(0,0,0,0.1);
+  --text:#111;--text2:#666;--text3:#999;
+  --blue:#185FA5;--blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --green:#1D9E75;--green-bg:#E1F5EE;--green-text:#27500A;
+  --amber:#BA7517;--amber-bg:#FAEEDA;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --green-badge:#EAF3DE;--green-badge-text:#27500A;
+  --red-badge:#FAECE7;--red-badge-text:#712B13;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a18;--surface:#242422;--surface2:#2e2e2b;--border:rgba(255,255,255,0.1);
+    --text:#f0efe9;--text2:#999;--text3:#666;
+    --blue-bg:#0c2540;--blue-text:#85B7EB;
+    --green-bg:#04201a;--green-text:#5DCAA5;
+    --green-badge:#0a1f07;--green-badge-text:#97C459;
+    --red-badge:#2a0e0e;--red-badge-text:#F09595;
+  }
+}
+html,body{height:100%;background:var(--bg);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--text);overscroll-behavior:none}
+.topbar{background:var(--surface);border-bottom:0.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.db-indicator{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);background:var(--surface2);padding:4px 9px;border-radius:20px;border:0.5px solid var(--border)}
+.db-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background 0.3s}
+.db-dot.connected{background:#1D9E75}
+.db-dot.saving{background:#BA7517;animation:pulse 0.8s infinite}
+.db-dot.error{background:#A32D2D}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.tabnav-wrap{background:var(--surface);border-bottom:0.5px solid var(--border);padding:8px 14px;overflow-x:auto}
+.tab-nav{display:flex;gap:3px;width:max-content}
+.tab-btn{padding:6px 13px;font-size:12px;border:none;background:transparent;border-radius:8px;cursor:pointer;color:var(--text2);font-family:inherit;white-space:nowrap;transition:all 0.15s}
+.tab-btn.active{background:var(--surface2);color:var(--text);font-weight:600;border:0.5px solid var(--border)}
+.content{padding:12px 14px;max-width:900px;margin:0 auto}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+@media(min-width:500px){.stats-row{grid-template-columns:repeat(4,1fr)}}
+.stat-card{background:var(--surface2);border-radius:10px;padding:10px 12px}
+.stat-label{font-size:11px;color:var(--text2);margin-bottom:3px}
+.stat-val{font-size:20px;font-weight:500;color:var(--text)}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.btn{padding:7px 13px;font-size:12px;border:0.5px solid var(--border);background:transparent;border-radius:9px;cursor:pointer;color:var(--text);font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all 0.15s}
+.btn:active{transform:scale(0.97)}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--blue);color:#E6F1FB;border-color:var(--blue)}
+.btn.primary:hover{background:var(--blue-text)}
+.btn.green{background:var(--green);color:#E1F5EE;border-color:var(--green)}
+.btn.green:hover{background:#0F6E56}
+.btn.amber{background:var(--amber);color:#FAEEDA;border-color:var(--amber)}
+.btn.danger{background:var(--red);color:#FCEBEB;border-color:var(--red)}
+.btn.small{padding:4px 9px;font-size:11px}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 8px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)}
+td{padding:9px 8px;border-bottom:0.5px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge.sudah{background:var(--green-badge);color:var(--green-badge-text)}
+.badge.belum{background:var(--red-badge);color:var(--red-badge-text)}
+.badge.giliran{background:var(--blue-bg);color:var(--blue-text)}
+.badge.selesai{background:var(--surface2);color:var(--text2)}
+.avatar{width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.name-cell{display:flex;align-items:center;gap:8px}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.input-group{display:flex;flex-direction:column;gap:4px}
+.input-group label{font-size:11px;color:var(--text2);font-weight:500}
+input[type=text],input[type=number]{width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none;transition:border-color 0.15s}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);background:var(--surface)}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--blue);color:#E6F1FB;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:opacity 0.25s;z-index:9999;max-width:90vw;pointer-events:none;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+.toast.show{opacity:1}
+.absen-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.absen-day{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--border);transition:transform 0.1s}
+.absen-day:active{transform:scale(0.9)}
+.absen-day.paid{background:var(--green-badge);color:var(--green-badge-text);border-color:#C0DD97}
+.absen-day.unpaid{background:var(--surface2);color:var(--text2)}
+.absen-day.today{border:2px solid var(--blue)}
+.absen-day.future{opacity:0.3;cursor:default}
+.day-header{font-size:10px;color:var(--text2);text-align:center;padding:3px 0;font-weight:500}
+.progress-bar-wrap{background:var(--surface2);border-radius:20px;height:5px;margin-top:4px}
+.progress-bar{height:5px;border-radius:20px;background:var(--green);transition:width 0.3s}
+.loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;gap:12px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--text2)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.two-col{grid-template-columns:1fr}}
+.export-item{background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.export-item-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.export-item-desc{font-size:11px;color:var(--text2)}
+.divider{border:none;border-top:0.5px solid var(--border);margin:14px 0}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:6px;height:14px;margin:4px 0}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Menghubungkan ke database...</div>
+</div>
+
+<div id="app" style="display:none">
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🪙 Admin Jula-Jula</div>
+    <div class="topbar-sub" id="today-label">—</div>
+  </div>
+  <div class="db-indicator"><div class="db-dot" id="db-dot"></div><span id="db-status">Menghubungkan...</span></div>
+</div>
+<div class="tabnav-wrap">
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="showTab('peserta')">Peserta</button>
+    <button class="tab-btn" onclick="showTab('absensi')">Pembayaran</button>
+    <button class="tab-btn" onclick="showTab('giliran')">Giliran</button>
+    <button class="tab-btn" onclick="showTab('ekspor')">Ekspor</button>
+    <button class="tab-btn" onclick="window.open('peserta.html', '_blank')">Halaman Peserta</button>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard">
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="stat-label">Total peserta</div><div class="skeleton" style="width:40px;height:24px"></div></div>
+    <div class="stat-card"><div class="stat-label">Sudah bayar</div><div class="skeleton" style="width:40px;height:24px"></div></div>
+    <div class="stat-card"><div class="stat-label">Belum bayar</div><div class="skeleton" style="width:40px;height:24px"></div></div>
+    <div class="stat-card"><div class="stat-label">Terkumpul bulan ini</div><div class="skeleton" style="width:80px;height:24px"></div></div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Pembayaran hari ini</span><span id="tanggal-hari-ini" style="font-size:11px;color:var(--text2)"></span></div>
+      <div id="bayar-hari-ini"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Giliran berikutnya</span></div>
+      <div id="giliran-info"><div class="skeleton"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Rekap 7 hari terakhir</span></div>
+    <div id="rekap-minggu"><div class="skeleton"></div></div>
+  </div>
+</div>
+
+<!-- PESERTA -->
+<div id="tab-peserta" style="display:none">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Tambah peserta baru</span></div>
+    <div class="input-row">
+      <div class="input-group"><label>Nama peserta</label><input type="text" id="inp-nama" placeholder="Nama lengkap"></div>
+      <div class="input-group"><label>No. HP</label><input type="text" id="inp-hp" placeholder="08xxxxxxxxxx"></div>
+    </div>
+    <div class="input-row">
+      <div class="input-group"><label>Iuran harian (Rp)</label><input type="number" id="inp-iuran" value="50000"></div>
+      <div class="input-group"><label>No. urut giliran</label><input type="number" id="inp-urut" placeholder="Auto"></div>
+    </div>
+    <div class="form-actions"><button class="btn primary" id="btn-tambah" onclick="tambahPeserta()">+ Tambah</button></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Daftar peserta</span><span id="jumlah-peserta" style="font-size:11px;color:var(--text2)"></span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nama</th><th>HP</th><th>Iuran/hari</th><th>Total bayar</th><th>Status</th><th></th></tr></thead><tbody id="tbl-peserta"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ABSENSI -->
+<div id="tab-absensi" style="display:none">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Pembayaran harian</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="cari-peserta" placeholder="Cari nama..." style="width:130px;padding:6px 9px;font-size:11px" oninput="filterAbsensi()">
+        <button class="btn small green" onclick="tandaiSemuaBayar()">Semua bayar</button>
+        <button class="btn small primary" onclick="resetSemuaIuran()">Mulai Minggu Baru (Reset Semua)</button>
+      </div>
+    </div>
+    <div style="margin-bottom:8px;font-size:11px;color:var(--text2)">Ketuk nama untuk lihat riwayat kalender.</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Peserta</th><th>Iuran</th><th>Hari ini</th><th>Progres bulan</th><th></th></tr></thead><tbody id="tbl-absensi"></tbody></table></div>
+  </div>
+  <div class="card" id="panel-riwayat" style="display:none">
+    <div class="card-header"><span class="card-title" id="riwayat-nama">Riwayat</span><button class="btn small" onclick="tutupRiwayat()">Tutup</button></div>
+    <div id="riwayat-konten"></div>
+  </div>
+</div>
+
+<!-- GILIRAN -->
+<div id="tab-giliran" style="display:none">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Jadwal giliran</span></div>
+    <div id="list-giliran"></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Tandai sudah terima</span></div>
+    <div id="form-giliran"></div>
+  </div>
+</div>
+
+<!-- EKSPOR -->
+<div id="tab-ekspor" style="display:none">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Ekspor data ke Excel</span></div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Unduh data sebagai file Excel untuk disimpan atau dibagikan.</p>
+    <div class="export-item">
+      <div><div class="export-item-title">Rekap lengkap bulan ini</div><div class="export-item-desc">Absensi harian + rekap peserta + jadwal giliran</div></div>
+      <button class="btn green" onclick="eksporRekap()">⬇ Unduh</button>
+    </div>
+    <div class="export-item">
+      <div><div class="export-item-title">Data peserta</div><div class="export-item-desc">Daftar semua peserta + total pembayaran</div></div>
+      <button class="btn primary" onclick="eksporPeserta()">⬇ Unduh</button>
+    </div>
+    <div class="export-item">
+      <div><div class="export-item-title">Absensi detail bulanan</div><div class="export-item-desc">Tiap hari sebagai kolom, tiap peserta sebagai baris</div></div>
+      <button class="btn amber" onclick="eksporAbsensiDetail()">⬇ Unduh</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Info database</span></div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.9">
+      <div>• Data tersimpan di <b style="color:var(--text)">Supabase</b> — bisa diakses dari HP manapun.</div>
+      <div>• Setiap perubahan langsung tersinkron ke server secara otomatis.</div>
+      <div>• Data tidak akan hilang meski ganti HP, hapus cache, atau reinstall browser.</div>
+      <div>• Pastikan ada koneksi internet saat menggunakan aplikasi ini.</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ylcadlukkyposthktnkk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsY2FkbHVra3lwb3N0aGt0bmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NTAxMzIsImV4cCI6MjA5MTAyNjEzMn0.X9yvUdy92bGE9rHAtlPGZSrDj_qmCD0z6b3cara08ps';
+
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+  'Prefer': 'return=representation'
+};
+
+const WARNA = ['#185FA5','#1D9E75','#854F0B','#993C1D','#533AB7','#0F6E56','#3B6D11','#BA7517'];
+const WARNA_BG = ['#E6F1FB','#E1F5EE','#FAEEDA','#FAECE7','#EEEDFE','#E1F5EE','#EAF3DE','#FAEEDA'];
+
+const today = new Date();
+const todayKey = today.toISOString().split('T')[0];
+const bulanIni = todayKey.slice(0, 7);
+
+let pesertaList = [];
+let absensiSet = new Set();
+let absensiFilter = '';
+
+function fmt(n) { return 'Rp ' + Number(n).toLocaleString('id-ID'); }
+function inisial(nama) { return nama.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
+
+function showTab(tab) {
+    const tabs = ['dashboard', 'peserta', 'absensi', 'giliran', 'ekspor'];
+    tabs.forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.getAttribute('onclick').includes(`'${tab}'`)) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Panggil render data
+    if (tab === 'dashboard') renderDashboard();
+    if (tab === 'peserta') renderPeserta();
+    if (tab === 'absensi') renderAbsensi();
+    if (tab === 'giliran') renderGiliran();
+}
+
+function setDbStatus(s) {
+  const dot = document.getElementById('db-dot');
+  const lbl = document.getElementById('db-status');
+  if (s === 'connected') { dot.className = 'db-dot connected'; lbl.textContent = 'Terhubung'; }
+  else if (s === 'saving') { dot.className = 'db-dot saving'; lbl.textContent = 'Menyimpan...'; }
+  else if (s === 'error') { dot.className = 'db-dot error'; lbl.textContent = 'Gagal'; }
+  else { dot.className = 'db-dot'; lbl.textContent = 'Menghubungkan...'; }
+}
+
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'success' ? '#1D9E75' : type === 'error' ? '#A32D2D' : '#185FA5';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function sbFetch(path, method = 'GET', body = null) {
+  // Masukkan API KEY langsung ke URL agar tidak diblokir browser sebagai Header
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${SUPABASE_URL}/rest/v1/${path}${sep}apikey=${SUPABASE_KEY}`;
+
+  const opts = { 
+    method, 
+    // Di dalam fungsi sbFetch, pastikan headers-nya seperti ini:
+    headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'return=representation' // <--- INI SANGAT PENTING
+    }
+  };
+
+  if (body) opts.body = JSON.stringify(body);
+
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal');
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+// async function loadAll() {
+//   setDbStatus('loading');
+//   try {
+//     // Menghitung tanggal terakhir bulan ini secara otomatis
+//     const [year, month] = bulanIni.split('-');
+//     const lastDay = new Date(year, month, 0).getDate(); // Ini akan menghasilkan 30 untuk April
+//     const tglAkhir = `${bulanIni}-${String(lastDay).padStart(2, '0')}`;
+
+//     const [p, a] = await Promise.all([
+//       sbFetch('peserta?select=*&order=urut.asc'),
+//       sbFetch(`absensi?select=peserta_id,tanggal&tanggal=gte.${bulanIni}-01&tanggal=lte.${tglAkhir}`)
+//     ]);
+    
+//     pesertaList = p || [];
+//     absensiSet = new Set((a || []).map(x => x.peserta_id + '_' + x.tanggal));
+//     setDbStatus('connected');
+//     document.getElementById('loading-overlay').style.display = 'none';
+//     document.getElementById('app').style.display = '';
+//     renderDashboard();
+//   } catch (e) {
+//     console.error(e);
+//     setDbStatus('error');
+//     // ... sisa kode error handling kamu
+//      document.getElementById('loading-overlay').innerHTML = `
+//       <div style="text-align:center;padding:20px">
+//         <div style="font-size:14px;color:#A32D2D;margin-bottom:8px">Gagal terhubung ke database</div>
+//         <div style="font-size:12px;color:var(--text2);margin-bottom:16px">${e.message}</div>
+//         <button class="btn primary" onclick="location.reload()">Coba Lagi</button>
+//       </div>`;
+//   }
+// }
+
+async function loadAll() {
+  setDbStatus('loading');
+  try {
+    const [p, a] = await Promise.all([
+      sbFetch('peserta?select=*&order=urut.asc'),
+      sbFetch('absensi?select=peserta_id,tanggal')
+    ]);
+    
+    pesertaList = p || [];
+    let currentAbsensi = a || [];
+
+    // --- LOGIKA AUTO-RESET SEMUA PESERTA ---
+    // 1. Cek apakah SEMUA peserta sudah ditandai "Sudah Terima"
+    const isSemuaSelesai = pesertaList.length > 0 && pesertaList.every(pers => pers.sudah_terima === true);
+
+    if (isSemuaSelesai) {
+      console.log("Siklus Putaran Selesai. Mereset data untuk semua peserta...");
+      
+      // 2. Hapus SEMUA data di tabel absensi (Reset Iuran ke 0)
+      await sbFetch('absensi?peserta_id=gt.0', 'DELETE');
+
+      // 3. Kembalikan status "Sudah Terima" semua peserta menjadi false (Tunggu)
+      // Agar minggu depan mereka bisa masuk daftar giliran lagi
+      await sbFetch('peserta?id=gt.0', 'PATCH', { sudah_terima: false });
+
+      // 4. Update data lokal agar tampilan langsung bersih
+      pesertaList.forEach(pers => pers.sudah_terima = false);
+      currentAbsensi = []; 
+      
+      showToast('Putaran baru dimulai! Semua data telah direset.', 'success');
+    }
+    // --- END LOGIKA AUTO-RESET ---
+
+    absensiSet = new Set(currentAbsensi.map(x => x.peserta_id + '_' + x.tanggal));
+    
+    setDbStatus('connected');
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    
+    renderDashboard();
+  } catch (e) {
+    console.error("Gagal Load:", e);
+    setDbStatus('error');
+  }
+}
+
+
+function sudahBayar(pid, tgl) { return absensiSet.has(pid + '_' + tgl); }
+function getDaysInMonth(ym) { const [y, m] = ym.split('-'); return new Date(y, m, 0).getDate(); }
+
+function totalBayarBulan(pid) {
+  const p = pesertaList.find(x => x.id === pid);
+  if (!p) return { total: 0, count: 0 };
+  
+  // Hitung berapa banyak data di absensiSet yang diawali dengan [peserta_id]_
+  // Ini akan menghitung semua kotak (1-7) yang sudah diklik
+  const count = Array.from(absensiSet)
+    .filter(key => key.startsWith(pid + '_')).length;
+    
+  return { 
+    total: count * p.iuran, 
+    count: count 
+  };
+}
+
+function renderDashboard() {
+  try {
+    const todayLabel = document.getElementById('today-label');
+    const tglHariIni = document.getElementById('tanggal-hari-ini');
+    const statsRow = document.getElementById('stats-row');
+    const bayarHariIni = document.getElementById('bayar-hari-ini');
+
+    if (todayLabel) todayLabel.textContent = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (tglHariIni) tglHariIni.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const totalPeserta = pesertaList.length;
+    let totalTerkumpulBulanIni = 0;
+    let jumlahSudahBayarHariIni = 0;
+
+    pesertaList.forEach(p => {
+      const rekap = totalBayarBulan(p.id);
+      totalTerkumpulBulanIni += rekap.total;
+      if (sudahBayar(p.id, todayKey)) jumlahSudahBayarHariIni++;
+    });
+
+    const belumBayarHariIni = totalPeserta - jumlahSudahBayarHariIni;
+
+    if (statsRow) {
+      statsRow.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Total peserta</div><div class="stat-val">${totalPeserta}</div></div>
+        <div class="stat-card"><div class="stat-label">Sudah bayar</div><div class="stat-val" style="color:#1D9E75">${jumlahSudahBayarHariIni}</div></div>
+        <div class="stat-card"><div class="stat-label">Belum bayar</div><div class="stat-val" style="color:${belumBayarHariIni > 0 ? '#BA7517' : 'var(--text)'}">${belumBayarHariIni}</div></div>
+        <div class="stat-card"><div class="stat-label">Kas Terkumpul</div><div class="stat-val" style="font-size:13px; color:#1D9E75">${fmt(totalTerkumpulBulanIni)}</div></div>`;
+    }
+
+    let listHtml = '';
+    pesertaList.forEach((p, i) => {
+      const rekap = totalBayarBulan(p.id);
+      listHtml += `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)">
+          <div class="name-cell">
+            <div class="avatar" style="background:${WARNA_BG[i%8]};color:${WARNA[i%8]}">${inisial(p.nama)}</div>
+            <div>
+              <div style="font-size:13px; font-weight:600">${p.nama}</div>
+              <div style="font-size:10px; color:var(--text2)">${rekap.count}x Setoran</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px; font-weight:700; color:#1D9E75">${fmt(rekap.total)}</div>
+          </div>
+        </div>`;
+    });
+    
+    if (bayarHariIni) bayarHariIni.innerHTML = listHtml || '<div style="color:var(--text2);font-size:12px">Belum ada peserta</div>';
+
+    // Panggil bagian Giliran & Rekap Mingguan
+    renderDashboardExtra(); 
+  } catch (err) {
+    console.error("Error di Dashboard:", err);
+  }
+}
+
+// Pisahkan bagian extra agar jika salah satu error, yang lain tetap jalan
+function renderDashboardExtra() {
+  const giliranInfo = document.getElementById('giliran-info');
+  const rekapMinggu = document.getElementById('rekap-minggu');
+
+  if (giliranInfo) {
+    const belumTerima = pesertaList.filter(p => !p.sudah_terima);
+    if (belumTerima.length === 0) {
+      giliranInfo.innerHTML = '<div style="color:var(--text2);font-size:12px">Semua sudah terima 🎉</div>';
+    } else {
+      const next = belumTerima[0];
+      const idx = pesertaList.indexOf(next);
+      const estimasiPot = pesertaList.reduce((s, p) => s + (p.iuran * 7), 0);
+      giliranInfo.innerHTML = `
+        <div style="background:var(--blue-bg);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+          <div class="name-cell">
+            <div class="avatar" style="background:${WARNA_BG[idx%8]};color:${WARNA[idx%8]}">${inisial(next.nama)}</div>
+            <div style="font-size:13px;font-weight:600">${next.nama}</div>
+          </div>
+          <span class="badge giliran">Berikutnya</span>
+        </div>
+        <div style="font-size:11px;margin-top:5px;color:var(--text2)">Estimasi Pot: <b>${fmt(estimasiPot)}</b></div>`;
+    }
+  }
+
+  if (rekapMinggu) {
+    let rekapHtml = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">';
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const keyTgl = d.toISOString().split('T')[0];
+      const count = Array.from(absensiSet).filter(k => k.includes(keyTgl)).length;
+      rekapHtml += `<div style="text-align:center;font-size:10px;background:var(--surface2);padding:5px;border-radius:5px">
+        ${d.getDate()}<br><b style="color:#1D9E75">${count}</b>
+      </div>`;
+    }
+    rekapMinggu.innerHTML = rekapHtml + '</div>';
+  }
+}
+// async function tambahPeserta() {
+//   const nama = document.getElementById('inp-nama').value.trim();
+//   const hp = document.getElementById('inp-hp').value.trim();
+//   const iuran = parseInt(document.getElementById('inp-iuran').value) || 50000;
+//   const urut = parseInt(document.getElementById('inp-urut').value) || (pesertaList.length + 1);
+
+//   if (!nama) { showToast('Nama tidak boleh kosong', 'error'); return; }
+
+//   const btn = document.getElementById('btn-tambah');
+//   btn.disabled = true; btn.textContent = 'Menyimpan...';
+//   setDbStatus('saving');
+
+//   try {
+//     // Pastikan mengirim objek tunggal dalam array [ {} ] jika POST di Supabase
+//     const result = await sbFetch('peserta', 'POST', [{ 
+//       nama: nama, 
+//       hp: hp, 
+//       iuran: iuran, 
+//       urut: urut, 
+//       sudah_terima: false 
+//     }]);
+
+//     // Refresh data dari server agar sinkron
+//     const pBaru = await sbFetch('peserta?select=*&order=urut.asc');
+//     pesertaList = pBaru || [];
+    
+//     document.getElementById('inp-nama').value = '';
+//     document.getElementById('inp-hp').value = '';
+//     document.getElementById('inp-urut').value = '';
+
+//     setDbStatus('connected');
+//     showToast(nama + ' berhasil ditambahkan!', 'success');
+//     renderPeserta();
+//     renderDashboard();
+//   } catch (e) {
+//     console.error("Gagal Simpan:", e);
+//     setDbStatus('error');
+//     showToast('Gagal: ' + e.message, 'error');
+//   }
+//   btn.disabled = false; btn.textContent = '+ Tambah';
+// }
+
+function renderPeserta() {
+  const tblPeserta = document.getElementById('tbl-peserta');
+  const jmlPeserta = document.getElementById('jumlah-peserta');
+  
+  if (!tblPeserta) return; // Keamanan agar tidak error jika elemen tidak ada
+
+  if (jmlPeserta) jmlPeserta.textContent = pesertaList.length + ' peserta';
+
+  let html = '';
+  
+  // Pastikan pesertaList ada isinya
+  if (pesertaList && pesertaList.length > 0) {
+    pesertaList.forEach((p, i) => {
+      // Kita panggil fungsi hitung total yang baru
+      const rekap = totalBayarBulan(p.id);
+      
+      html += `<tr>
+        <td><b>${p.urut || (i+1)}</b></td>
+        <td>
+          <div class="name-cell">
+            <div class="avatar" style="background:${WARNA_BG[i%8]};color:${WARNA[i%8]}">${inisial(p.nama)}</div>
+            ${p.nama}
+          </div>
+        </td>
+        <td style="color:var(--text2)">${p.hp || '-'}</td>
+        <td>${fmt(p.iuran)}</td>
+        <td style="color:#1D9E75;font-weight:600">${fmt(rekap.total)}</td>
+        <td><span class="badge ${p.sudah_terima ? 'selesai' : 'giliran'}">${p.sudah_terima ? 'Sudah' : 'Tunggu'}</span></td>
+        <td><button class="btn small danger" onclick="hapusPeserta(${p.id})">Hapus</button></td>
+      </tr>`;
+    });
+  } else {
+    html = '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Belum ada data peserta di memori.</td></tr>';
+  }
+
+  tblPeserta.innerHTML = html;
+}
+
+async function tambahPeserta() {
+  const nama = document.getElementById('inp-nama').value.trim();
+  const hp = document.getElementById('inp-hp').value.trim();
+  const iuran = parseInt(document.getElementById('inp-iuran').value) || 50000;
+  const urut = parseInt(document.getElementById('inp-urut').value) || (pesertaList.length + 1);
+
+  if (!nama) { showToast('Nama tidak boleh kosong', 'error'); return; }
+
+  const btn = document.getElementById('btn-tambah');
+  btn.disabled = true; 
+  btn.textContent = 'Menyimpan...';
+  setDbStatus('saving');
+
+  try {
+    // Gunakan array [ {} ] untuk POST ke Supabase
+    // Tambahkan header 'Prefer': 'return=representation' agar Supabase mengembalikan data yang baru dibuat
+    await sbFetch('peserta', 'POST', [{ 
+      nama: nama, 
+      hp: hp, 
+      iuran: iuran, 
+      urut: urut, 
+      sudah_terima: false 
+    }]);
+
+    // DARIPADA ambil dari 'result[0]', lebih aman ambil ulang semua data terbaru dari database
+    const dataTerbaru = await sbFetch('peserta?select=*&order=urut.asc');
+    pesertaList = dataTerbaru || [];
+
+    // Reset Form
+    document.getElementById('inp-nama').value = '';
+    document.getElementById('inp-hp').value = '';
+    document.getElementById('inp-urut').value = '';
+
+    setDbStatus('connected');
+    showToast(nama + ' berhasil ditambahkan!', 'success');
+    
+    // Update tampilan
+    renderPeserta();
+    renderDashboard();
+    
+  } catch (e) {
+    console.error("Detail Error:", e);
+    // Jika data masuk tapi masih error, kita paksa refresh list saja
+    const dataTerbaru = await sbFetch('peserta?select=*&order=urut.asc');
+    pesertaList = dataTerbaru || [];
+    renderPeserta();
+    
+    setDbStatus('connected');
+    showToast('Data tersimpan (dengan penyesuaian)', 'info');
+  } finally {
+    btn.disabled = false; 
+    btn.textContent = '+ Tambah';
+  }
+}
+
+async function hapusPeserta(id) {
+  if (!confirm('Hapus peserta ini? Semua data absensinya juga akan terhapus.')) return;
+  setDbStatus('saving');
+  try {
+    await sbFetch('peserta?id=eq.' + id, 'DELETE');
+    pesertaList = pesertaList.filter(p => p.id !== id);
+    absensiSet = new Set([...absensiSet].filter(k => !k.startsWith(id + '_')));
+    setDbStatus('connected');
+    showToast('Peserta dihapus', 'success');
+    renderPeserta();
+  } catch (e) {
+    setDbStatus('error');
+    showToast('Gagal menghapus: ' + e.message, 'error');
+  }
+}
+
+function filterAbsensi() { absensiFilter = document.getElementById('cari-peserta').value.toLowerCase(); renderAbsensi(); }
+
+// function renderAbsensi() {
+//   const filtered = pesertaList.filter(p => p.nama.toLowerCase().includes(absensiFilter));
+//   let html = '';
+//   filtered.forEach((p, i) => {
+//     const bayar = sudahBayar(p.id, todayKey);
+//     const { total, count } = totalBayarBulan(p.id);
+//     const hari = today.getDate();
+//     const pct = hari > 0 ? Math.round(count / hari * 100) : 0;
+//     html += `<tr>
+//       <td onclick="lihatRiwayat(${p.id})" style="cursor:pointer">
+//         <div class="name-cell"><div class="avatar" style="background:${WARNA_BG[i%8]};color:${WARNA[i%8]}">${inisial(p.nama)}</div>
+//         <div><div style="font-weight:600;font-size:12px">${p.nama}</div><div style="font-size:10px;color:var(--text2)">${count}/${hari} hari</div></div></div></td>
+//       <td style="font-size:11px">${fmt(p.iuran)}</td>
+//       <td><span class="badge ${bayar ? 'sudah' : 'belum'}">${bayar ? '✓ Sudah' : '✗ Belum'}</span></td>
+//       <td style="min-width:90px"><div style="font-size:11px;font-weight:600;color:#1D9E75">${fmt(total)}</div>
+//         <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div></td>
+//       <td>${bayar
+//         ? `<button class="btn small" onclick="batalBayar(${p.id})">Batal</button>`
+//         : `<button class="btn small primary" onclick="catatBayar(${p.id})">Bayar</button>`}</td></tr>`;
+//   });
+//   document.getElementById('tbl-absensi').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text2)">Tidak ada peserta</td></tr>';
+// }
+
+// function renderAbsensi() {
+//   const filtered = pesertaList.filter(p => p.nama.toLowerCase().includes(absensiFilter));
+//   let html = '';
+  
+//   filtered.forEach((p, i) => {
+//     // 1. Hitung jumlah setoran yang sudah masuk (kotak hijau)
+//     const listBayar = Array.from(absensiSet)
+//       .filter(key => key.startsWith(p.id + '_'));
+    
+//     const jumlahBayar = listBayar.length;
+    
+//     // 2. Hitung Total Bayar (Jumlah Setoran x Iuran Peserta)
+//     const totalBayarDisplay = jumlahBayar * p.iuran;
+
+//     html += `<tr>
+//       <td onclick="lihatRiwayat(${p.id})" style="cursor:pointer; min-width:120px">
+//         <div class="name-cell">
+//           <div class="avatar" style="background:${WARNA_BG[i%8]};color:${WARNA[i%8]}">${inisial(p.nama)}</div>
+//           <div>
+//             <div style="font-weight:600;font-size:12px">${p.nama}</div>
+//             <div style="font-size:10px;color:var(--text2)">${jumlahBayar}x Setoran</div>
+//           </div>
+//         </div>
+//       </td>
+//       <td>
+//         <div style="display:flex; gap:5px; flex-wrap:nowrap;">
+//           ${[1, 2, 3, 4, 5, 6, 7].map(num => {
+//             const isPaid = num <= jumlahBayar;
+//             return `
+//               <div onclick="${isPaid ? `batalSetoranTerakhir(${p.id})` : `tambahSetoran(${p.id})`}" 
+//                    style="
+//                     width:28px; height:28px; border-radius:6px; 
+//                     display:flex; align-items:center; justify-content:center; 
+//                     font-size:11px; font-weight:600; cursor:pointer;
+//                     border: 0.5px solid var(--border);
+//                     background: ${isPaid ? 'var(--green-badge)' : 'var(--surface2)'};
+//                     color: ${isPaid ? 'var(--green-badge-text)' : 'var(--text3)'};
+//                    ">
+//                 ${num}
+//               </div>
+//             `;
+//           }).join('')}
+//         </div>
+//       </td>
+//       <td style="min-width:110px">
+//         <div style="font-size:12px; font-weight:700; color:#1D9E75">${fmt(totalBayarDisplay)}</div>
+//         <div style="font-size:9px; color:var(--text2)">Total Terbayar</div>
+//       </td>
+//     </tr>`;
+//   });
+//   document.getElementById('tbl-absensi').innerHTML = html || '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text2)">Tidak ada peserta</td></tr>';
+// }
+
+function renderAbsensi() {
+  const filtered = pesertaList.filter(p => p.nama.toLowerCase().includes(absensiFilter));
+  let html = '';
+  
+  filtered.forEach((p, i) => {
+    // LOGIKA RESET OTOMATIS:
+    // Jika peserta sudah terima, kita anggap jumlah setorannya 0 (Reset)
+    // Tapi jika belum terima, kita hitung dari database seperti biasa
+    // Di dalam renderAbsensi, pada bagian loop pesertaList.forEach:
+    const listBayar = Array.from(absensiSet).filter(key => key.startsWith(p.id + '_'));
+    const jumlahBayar = listBayar.length;
+    const totalBayarDisplay = jumlahBayar * p.iuran; // Uang akan bertambah otomatis di sini
+
+    html += `<tr>
+      <td onclick="lihatRiwayat(${p.id})" style="cursor:pointer; min-width:120px">
+        <div class="name-cell">
+          <div class="avatar" style="background:${WARNA_BG[i%8]};color:${WARNA[i%8]}">${inisial(p.nama)}</div>
+          <div>
+            <div style="font-weight:600;font-size:12px">${p.nama}</div>
+            <div style="font-size:10px;color:var(--text2)">
+               ${p.sudah_terima ? '<span style="color:#1D9E75">Siklus Selesai</span>' : `${jumlahBayar}x Setoran`}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex; gap:5px; flex-wrap:nowrap;">
+          ${[1, 2, 3, 4, 5, 6, 7].map(num => {
+            const isPaid = num <= jumlahBayar;
+
+// Logika: Jika kotak sudah hijau (isPaid), klik akan membatalkan. 
+// Jika kotak masih abu-abu, klik akan menambah setoran.
+            const action = isPaid ? `batalSetoranTerakhir(${p.id})` : `tambahSetoran(${p.id})`;
+
+            return `
+                <div onclick="${action}" 
+                    style="
+                        width:28px; height:28px; border-radius:6px; 
+                        display:flex; align-items:center; justify-content:center; 
+                        font-size:11px; font-weight:600; cursor:pointer;
+                        border: 0.5px solid var(--border);
+                        background: ${isPaid ? 'var(--green-badge)' : 'var(--surface2)'};
+                        color: ${isPaid ? 'var(--green-badge-text)' : 'var(--text3)'};
+                    ">
+                    ${num}
+                </div>
+            `;
+          }).join('')}
+        </div>
+      </td>
+      <td style="min-width:110px">
+        <div style="font-size:12px; font-weight:700; color:#1D9E75">${fmt(totalBayarDisplay)}</div>
+        <div style="font-size:9px; color:var(--text2)">${p.sudah_terima ? 'Siap Putaran Baru' : 'Total Terbayar'}</div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('tbl-absensi').innerHTML = html || '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text2)">Tidak ada peserta</td></tr>';
+}
+
+async function resetSemuaIuran() {
+  const yakin = confirm('Konfirmasi: Mulai minggu baru?\n\nSemua kotak iuran (1-7) akan dikosongkan, tapi status peserta yang sudah menerima uang TIDAK akan berubah. Lanjutkan?');
+  
+  if(!yakin) return;
+
+  setDbStatus('saving');
+  try {
+    // 1. Hapus SEMUA data di tabel absensi di Supabase
+    // Ini yang membuat semua kotak 1-7 kembali abu-abu
+    await sbFetch('absensi?peserta_id=gt.0', 'DELETE');
+
+    // 2. Kosongkan memori lokal (absensiSet)
+    absensiSet.clear();
+
+    // 3. Berikan notifikasi sukses
+    showToast('Iuran berhasil direset ke 0!', 'success');
+    setDbStatus('connected');
+    
+    // 4. Refresh tampilan agar langsung terlihat perubahannya
+    renderAbsensi();
+    renderDashboard();
+    
+    // Kita tidak memanggil renderGiliran atau renderPeserta karena statusnya tidak berubah
+  } catch (e) {
+    console.error("Error Reset:", e);
+    showToast('Gagal reset iuran: ' + e.message, 'error');
+    setDbStatus('error');
+  }
+}
+
+async function tambahSetoran(pid) {
+  setDbStatus('saving');
+  try {
+    // Gunakan ID unik agar bisa setor berkali-kali
+    const tglUnik = todayKey + '_' + Date.now(); 
+
+    await sbFetch('absensi', 'POST', { 
+      peserta_id: pid, 
+      tanggal: tglUnik 
+    });
+
+    // Masukkan ke memori lokal supaya kotak jadi hijau
+    absensiSet.add(pid + '_' + tglUnik);
+    
+    setDbStatus('connected');
+    showToast('Setoran dicatat!', 'success');
+    
+    // RE-RENDER agar layar berubah (Kotak Hijau & Uang Bertambah)
+    renderAbsensi();
+    renderDashboard();
+  } catch (e) {
+    console.error(e);
+    setDbStatus('error');
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+async function batalSetoranTerakhir(pid) {
+  if(!confirm('Batalkan setoran terakhir peserta ini?')) return;
+  
+  setDbStatus('saving');
+  try {
+    // Cari tanggal/key terakhir yang diinput untuk user ini
+    const listBayar = Array.from(absensiSet)
+      .filter(key => key.startsWith(pid + '_'))
+      .sort();
+    
+    const keyTerakhir = listBayar[listBayar.length - 1];
+    const [id, tgl] = keyTerakhir.split('_', 2);
+    const jam = keyTerakhir.split('_')[2];
+    
+    // Sesuaikan query delete dengan format key kita
+    const fullTgl = jam ? `${tgl}_${jam}` : tgl;
+
+    await sbFetch(`absensi?peserta_id=eq.${pid}&tanggal=eq.${fullTgl}`, 'DELETE');
+    absensiSet.delete(keyTerakhir);
+    
+    showToast('Setoran terakhir dibatalkan');
+    setDbStatus('connected');
+    renderAbsensi();
+    renderDashboard();
+  } catch (e) {
+    setDbStatus('error');
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+async function toggleBayarCepat(pid, tgl) {
+  const key = pid + '_' + tgl;
+  setDbStatus('saving');
+  
+  try {
+    if (absensiSet.has(key)) {
+      // Jika sudah lunas, maka klik akan MEMBATALKAN
+      await sbFetch(`absensi?peserta_id=eq.${pid}&tanggal=eq.${tgl}`, 'DELETE');
+      absensiSet.delete(key);
+      showToast('Pembayaran dihapus');
+    } else {
+      // Jika belum lunas, maka klik akan MENCATAT BAYAR
+      await sbFetch('absensi', 'POST', { peserta_id: pid, tanggal: tgl });
+      absensiSet.add(key);
+      showToast('Pembayaran dicatat ✓', 'success');
+    }
+    
+    setDbStatus('connected');
+    renderAbsensi(); 
+    renderDashboard();
+  } catch (e) {
+    console.error(e);
+    setDbStatus('error');
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+async function catatBayar(pid) {
+  setDbStatus('saving');
+  try {
+    await sbFetch('absensi', 'POST', { peserta_id: pid, tanggal: todayKey });
+    absensiSet.add(pid + '_' + todayKey);
+    const p = pesertaList.find(x => x.id === pid);
+    setDbStatus('connected');
+    showToast(p.nama + ' tercatat bayar ✓', 'success');
+    renderAbsensi(); renderDashboard();
+  } catch (e) {
+    setDbStatus('error');
+    showToast('Gagal mencatat: ' + e.message, 'error');
+  }
+}
+
+async function catatBayarSeminggu(pid) {
+  if(!confirm('Catat pembayaran untuk 7 hari ke depan?')) return;
+  
+  setDbStatus('saving');
+  const p = pesertaList.find(x => x.id === pid);
+  let batchData = [];
+  let tanggalList = [];
+
+  // Looping untuk 7 hari (mulai hari ini sampai 6 hari ke depan)
+  for (let i = 0; i < 7; i++) {
+    let d = new Date();
+    d.setDate(d.getDate() + i);
+    let tglKey = d.toISOString().split('T')[0];
+    
+    // Cek dulu supaya tidak double input jika sudah pernah bayar di tgl tersebut
+    if (!absensiSet.has(pid + '_' + tglKey)) {
+      batchData.push({ peserta_id: pid, tanggal: tglKey });
+      tanggalList.push(tglKey);
+    }
+  }
+
+  if (batchData.length === 0) {
+    showToast('Sudah lunas untuk 7 hari ke depan', 'info');
+    setDbStatus('connected');
+    return;
+  }
+
+  try {
+    await sbFetch('absensi', 'POST', batchData);
+    
+    // Update data lokal (set)
+    tanggalList.forEach(tgl => absensiSet.add(pid + '_' + tgl));
+    
+    setDbStatus('connected');
+    showToast(`Berhasil catat 7 hari untuk ${p.nama}`, 'success');
+    renderAbsensi(); 
+    renderDashboard();
+  } catch (e) {
+    console.error(e);
+    setDbStatus('error');
+    showToast('Gagal mencatat mingguan: ' + e.message, 'error');
+  }
+}
+
+async function batalBayar(pid) {
+  setDbStatus('saving');
+  try {
+    await sbFetch('absensi?peserta_id=eq.' + pid + '&tanggal=eq.' + todayKey, 'DELETE');
+    absensiSet.delete(pid + '_' + todayKey);
+    setDbStatus('connected');
+    showToast('Pembayaran dibatalkan');
+    renderAbsensi(); renderDashboard();
+  } catch (e) {
+    setDbStatus('error');
+    showToast('Gagal membatalkan: ' + e.message, 'error');
+  }
+}
+
+async function tandaiSemuaBayar() {
+  const belum = pesertaList.filter(p => !sudahBayar(p.id, todayKey));
+  if (belum.length === 0) { showToast('Semua sudah bayar!'); return; }
+  setDbStatus('saving');
+  try {
+    const rows = belum.map(p => ({ peserta_id: p.id, tanggal: todayKey }));
+    await sbFetch('absensi', 'POST', rows);
+    belum.forEach(p => absensiSet.add(p.id + '_' + todayKey));
+    setDbStatus('connected');
+    showToast('Semua peserta sudah bayar ✓', 'success');
+    renderAbsensi(); renderDashboard();
+  } catch (e) {
+    setDbStatus('error');
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+async function lihatRiwayat(pid) {
+  const p = pesertaList.find(x => x.id === pid);
+  document.getElementById('riwayat-nama').textContent = 'Riwayat — ' + p.nama;
+  document.getElementById('riwayat-konten').innerHTML = '<div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div>';
+  document.getElementById('panel-riwayat').style.display = '';
+  try {
+    const rows = await sbFetch('absensi?peserta_id=eq.' + pid + '&tanggal=gte.' + bulanIni + '-01&tanggal=lte.' + bulanIni + '-31&select=tanggal');
+    rows.forEach(r => absensiSet.add(pid + '_' + r.tanggal));
+    const days = getDaysInMonth(bulanIni);
+    const weekDays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const firstDay = new Date(bulanIni + '-01').getDay();
+    let html = `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">${new Date(bulanIni + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</div>`;
+    html += '<div class="absen-grid">';
+    weekDays.forEach(d => { html += `<div class="day-header">${d}</div>`; });
+    for (let b = 0; b < firstDay; b++) html += '<div></div>';
+    for (let d = 1; d <= days; d++) {
+      const tgl = bulanIni + '-' + String(d).padStart(2, '0');
+      const bayar = sudahBayar(pid, tgl);
+      const isFuture = tgl > todayKey;
+      const isToday = tgl === todayKey;
+      html += `<div class="absen-day ${isFuture ? 'future' : bayar ? 'paid' : 'unpaid'} ${isToday ? 'today' : ''}" onclick="${!isFuture ? `toggleRiwayat(${pid},'${tgl}')` : ''}">${d}</div>`;
+    }
+    html += '</div>';
+    const { total, count } = totalBayarBulan(pid);
+    html += `<div style="margin-top:12px;display:flex;gap:14px;font-size:12px;flex-wrap:wrap">
+      <span>Hadir: <b style="color:#1D9E75">${count} hari</b></span>
+      <span>Total: <b style="color:#1D9E75">${fmt(total)}</b></span>
+      <span>Iuran: <b>${fmt(p.iuran)}/hari</b></span></div>`;
+    document.getElementById('riwayat-konten').innerHTML = html;
+    document.getElementById('panel-riwayat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    document.getElementById('riwayat-konten').innerHTML = '<div style="color:#A32D2D;font-size:12px">Gagal memuat riwayat</div>';
+  }
+}
+
+async function toggleRiwayat(pid, tgl) {
+  const key = pid + '_' + tgl;
+  setDbStatus('saving');
+  try {
+    if (absensiSet.has(key)) {
+      await sbFetch('absensi?peserta_id=eq.' + pid + '&tanggal=eq.' + tgl, 'DELETE');
+      absensiSet.delete(key);
+    } else {
+      await sbFetch('absensi', 'POST', { peserta_id: pid, tanggal: tgl });
+      absensiSet.add(key);
+    }
+    setDbStatus('connected');
+    lihatRiwayat(pid); renderAbsensi();
+  } catch (e) {
+    setDbStatus('error');
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+function tutupRiwayat() { document.getElementById('panel-riwayat').style.display = 'none'; }
+
+function renderGiliran() {
+  const sorted = pesertaList.slice().sort((a, b) => a.urut - b.urut);
+  let html = '';
+  sorted.forEach(p => {
+    const idx = pesertaList.indexOf(p);
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)">
+      <div class="name-cell">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text2);flex-shrink:0">${p.urut}</div>
+        <div class="avatar" style="background:${WARNA_BG[idx%8]};color:${WARNA[idx%8]}">${inisial(p.nama)}</div>
+        <span style="font-size:13px;font-weight:500">${p.nama}</span></div>
+      <span class="badge ${p.sudah_terima ? 'selesai' : 'giliran'}">${p.sudah_terima ? 'Sudah Terima' : 'Menunggu'}</span></div>`;
+  });
+  document.getElementById('list-giliran').innerHTML = html || '<div style="color:var(--text2);font-size:12px">Belum ada peserta</div>';
+  let fhtml = '';
+  sorted.filter(p => !p.sudah_terima).forEach(p => {
+    const idx = pesertaList.indexOf(p);
+    fhtml += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)">
+      <div class="name-cell"><div class="avatar" style="background:${WARNA_BG[idx%8]};color:${WARNA[idx%8]}">${inisial(p.nama)}</div><span style="font-size:13px">${p.nama}</span></div>
+      <button class="btn small primary" onclick="tandaiTerima(${p.id})">Tandai sudah terima</button></div>`;
+  });
+  document.getElementById('form-giliran').innerHTML = fhtml || '<div style="color:var(--text2);font-size:12px;padding:8px 0">Semua peserta sudah terima giliran 🎉</div>';
+}
+
+// async function tandaiTerima(pid) {
+//   setDbStatus('saving');
+//   try {
+//     await sbFetch('peserta?id=eq.' + pid, 'PATCH', { sudah_terima: true });
+//     const p = pesertaList.find(x => x.id === pid);
+//     p.sudah_terima = true;
+//     setDbStatus('connected');
+//     showToast(p.nama + ' sudah terima jula-jula!', 'success');
+//     renderGiliran();
+//   } catch (e) {
+//     setDbStatus('error');
+//     showToast('Gagal: ' + e.message, 'error');
+//   }
+// }
+
+async function tandaiTerima(pid) {
+  const p = pesertaList.find(x => x.id === pid);
+  if (!confirm(`Tandai ${p.nama} sudah terima uang jula-jula?\n\nPERHATIAN: Ini juga akan meriset iuran SEMUA peserta kembali ke 0.`)) return;
+
+  setDbStatus('saving');
+  try {
+    // 1. Update status peserta yang bersangkutan menjadi 'Sudah Terima'
+    await sbFetch(`peserta?id=eq.${pid}`, 'PATCH', { sudah_terima: true });
+    p.sudah_terima = true; // Update memori lokal
+
+    // 2. RISET MASAL: Hapus semua iuran di tabel absensi untuk SEMUA orang
+    await sbFetch('absensi?peserta_id=gt.0', 'DELETE');
+
+    // 3. Kosongkan memori lokal (absensiSet) agar kotak 1-7 kembali abu-abu
+    absensiSet.clear();
+
+    showToast(`Berhasil! ${p.nama} sudah terima & Iuran semua peserta direset.`, 'success');
+    setDbStatus('connected');
+    
+    // 4. Update semua tampilan
+    renderGiliran();
+    renderAbsensi();
+    renderDashboard();
+  } catch (e) {
+    console.error(e);
+    setDbStatus('error');
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+// async function tandaiTerima(pid) {
+//   setDbStatus('saving');
+//   try {
+//     await sbFetch(`peserta?id=eq.${pid}`, 'PATCH', { sudah_terima: true });
+    
+//     // Update data lokal
+//     const p = pesertaList.find(x => x.id === pid);
+//     if(p) p.sudah_terima = true;
+
+//     setDbStatus('connected');
+//     showToast(p.nama + ' sudah terima jula-jula!', 'success');
+    
+//     // CEK: Jika ini orang terakhir, jalankan loadAll untuk reset otomatis
+//     const sisa = pesertaList.filter(pers => !pers.sudah_terima).length;
+//     if (sisa === 0) {
+//       await loadAll(); // Ini akan memicu reset massal karena semua sudah_terima = true
+//     } else {
+//       renderGiliran();
+//       renderDashboard();
+//       renderAbsensi();
+//     }
+//   } catch (e) {
+//     setDbStatus('error');
+//     showToast('Gagal: ' + e.message, 'error');
+//   }
+// }
+
+function bulanLabel() { return new Date(bulanIni + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); }
+
+function eksporRekap() {
+  const wb = XLSX.utils.book_new();
+  const days = getDaysInMonth(bulanIni);
+  const header1 = ['No', 'Nama', 'HP', 'Iuran/Hari'];
+  for (let d = 1; d <= days; d++) header1.push(String(d));
+  header1.push('Total Hadir', 'Total Bayar (Rp)');
+  const rows1 = [header1];
+  pesertaList.forEach((p, i) => {
+    const row = [i + 1, p.nama, p.hp, p.iuran]; let count = 0;
+    for (let d = 1; d <= days; d++) {
+      const tgl = bulanIni + '-' + String(d).padStart(2, '0');
+      const bayar = sudahBayar(p.id, tgl);
+      row.push(bayar ? '✓' : ''); if (bayar) count++;
+    }
+    row.push(count, count * p.iuran); rows1.push(row);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(rows1);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Absensi Harian');
+  const rows2 = [['No', 'Nama', 'HP', 'Iuran/Hari', 'Total Hari', 'Total Bayar', 'Status']];
+  pesertaList.forEach((p, i) => {
+    const { total, count } = totalBayarBulan(p.id);
+    rows2.push([i + 1, p.nama, p.hp, p.iuran, count, total, p.sudah_terima ? 'Sudah Terima' : 'Menunggu']);
+  });
+  rows2.push([], ['', 'Total Terkumpul', '', '', '', pesertaList.reduce((s, p) => s + totalBayarBulan(p.id).total, 0), '']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows2), 'Rekap Peserta');
+  const rows3 = [['Urutan', 'Nama', 'HP', 'Iuran/Hari', 'Status']];
+  pesertaList.slice().sort((a, b) => a.urut - b.urut).forEach(p => rows3.push([p.urut, p.nama, p.hp, p.iuran, p.sudah_terima ? 'Sudah Terima' : 'Menunggu']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows3), 'Jadwal Giliran');
+  XLSX.writeFile(wb, 'JulaJula_Rekap_' + bulanIni + '.xlsx');
+  showToast('File Excel berhasil diunduh!', 'success');
+}
+
+function eksporPeserta() {
+  const rows = [['No', 'Nama', 'HP', 'Iuran/Hari', 'Total Hari', 'Total Bayar', 'Urutan', 'Status']];
+  pesertaList.forEach((p, i) => {
+    const { total, count } = totalBayarBulan(p.id);
+    rows.push([i + 1, p.nama, p.hp, p.iuran, count, total, p.urut, p.sudah_terima ? 'Sudah' : 'Tunggu']);
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Data Peserta');
+  XLSX.writeFile(wb, 'JulaJula_Peserta_' + todayKey + '.xlsx');
+  showToast('Data peserta diunduh!', 'success');
+}
+
+function eksporAbsensiDetail() {
+  const days = getDaysInMonth(bulanIni);
+  const header = ['Nama'];
+  for (let d = 1; d <= days; d++) {
+    const tgl = bulanIni + '-' + String(d).padStart(2, '0');
+    header.push(d + ' (' + new Date(tgl).toLocaleDateString('id-ID', { weekday: 'short' }) + ')');
+  }
+  header.push('Total Hadir', 'Total Bayar (Rp)');
+  const rows = [header];
+  pesertaList.forEach(p => {
+    const row = [p.nama]; let count = 0;
+    for (let d = 1; d <= days; d++) {
+      const tgl = bulanIni + '-' + String(d).padStart(2, '0');
+      const bayar = sudahBayar(p.id, tgl);
+      row.push(bayar ? 'BAYAR' : ''); if (bayar) count++;
+    }
+    row.push(count, count * p.iuran); rows.push(row);
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Absensi ' + bulanLabel());
+  XLSX.writeFile(wb, 'JulaJula_Detail_' + bulanIni + '.xlsx');
+  showToast('Absensi detail diunduh!', 'success');
+}
+
+// Init
+document.getElementById('today-label').textContent = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+loadAll();
+</script>
+</body>
+</html>

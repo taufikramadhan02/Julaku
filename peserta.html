@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pantau Jula-Jula</title>
+<style>
+:root{
+  --bg:#f8f9fa;--surface:#fff;--border:rgba(0,0,0,0.08);
+  --text:#1a1a1a;--text2:#6c757d;
+  --blue:#185FA5;--blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --green:#1D9E75;--green-bg:#E1F5EE;--green-text:#1D9E75;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#121212;--surface:#1e1e1e;--border:rgba(255,255,255,0.1);
+    --text:#e0e0e0;--text2:#a0a0a0;
+    --blue-bg:#0c2540;--blue-text:#85B7EB;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);font-family:system-ui,-apple-system,sans-serif;color:var(--text);padding-bottom:80px}
+
+/* Navbar */
+.navbar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);display:flex;justify-content:space-around;padding:12px 0;border-top:1px solid var(--border);z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text2);text-decoration:none;font-size:11px;cursor:pointer;flex:1}
+.nav-item.active{color:var(--blue)}
+.nav-icon{font-size:20px}
+
+/* Content */
+.header{background:var(--surface);padding:20px;border-bottom:1px solid var(--border);text-align:center}
+.container{padding:15px;max-width:600px;margin:0 auto}
+.card{background:var(--surface);border-radius:15px;padding:15px;margin-bottom:15px;border:1px solid var(--border)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:12px}
+
+/* Table Progres */
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px; color:var(--text2); padding:10px 5px; border-bottom:2px solid var(--bg); text-align:center; font-weight:700}
+td{padding:12px 5px; border-bottom:1px solid var(--border)}
+.name-cell{display:flex;align-items:center;gap:8px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.dot-grid{display:flex;gap:4px;justify-content:center}
+.dot{width:12px;height:12px;border-radius:3px;background:var(--bg);border:1px solid var(--border)}
+.dot.active{background:var(--green);border-color:var(--green)}
+
+/* Badges */
+.badge{padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.badge-wait{background:var(--bg);color:var(--text2)}
+.badge-done{background:var(--green-bg);color:var(--green-text)}
+
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="margin-top:15px; font-size:13px; color:var(--text2)">Memuat Data Jula-Jula...</p>
+</div>
+
+<nav class="navbar">
+  <div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+    <span class="nav-icon">🏠</span><span>Dashboard</span>
+  </div>
+  <div class="nav-item" id="nav-progres" onclick="showPage('progres')">
+    <span class="nav-icon">📊</span><span>Progres</span>
+  </div>
+  <div class="nav-item" id="nav-penerima" onclick="showPage('penerima')">
+    <span class="nav-icon">🗓️</span><span>Penerima</span>
+  </div>
+</nav>
+
+<div id="page-dashboard" class="page">
+  <div class="header">
+    <h1 style="font-size:18px">Monitoring Jula-Jula</h1>
+    <p id="date-now" style="font-size:12px; color:var(--text2)"></p>
+  </div>
+  <div class="container">
+    <div class="card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center">
+            <div style="background:var(--bg);padding:15px;border-radius:12px">
+                <div style="font-size:10px;color:var(--text2);text-transform:uppercase">Kas Terkumpul</div>
+                <div id="total-kas" style="font-size:16px;font-weight:700;color:var(--green);margin-top:5px">Rp 0</div>
+            </div>
+            <div style="background:var(--bg);padding:15px;border-radius:12px">
+                <div style="font-size:10px;color:var(--text2);text-transform:uppercase">Total Peserta</div>
+                <div id="count-peserta" style="font-size:16px;font-weight:700;margin-top:5px">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="card" id="next-turn-card" style="background:var(--blue-bg); border:none; display:none">
+        <div style="font-size:12px;color:var(--blue-text);font-weight:700;margin-bottom:4px">📢 Giliran Selanjutnya:</div>
+        <div id="next-info" style="font-size:16px;font-weight:800;color:var(--blue-text)">-</div>
+    </div>
+    <div class="card">
+        <div class="card-title">💡 Info</div>
+        <p style="font-size:12px; color:var(--text2); margin-bottom: 15px;">Jika ada kesalahan data iuran, silakan hubungi Admin melalui tombol di bawah.</p>
+        <a href="https://wa.me/6282283860567?text=Halo%20Admin%2C%20saya%20ingin%20bertanya%20mengenai%20iuran%20Jula-Jula" 
+           target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:white;text-decoration:none;padding:12px;border-radius:12px;font-size:13px;font-weight:700">
+            💬 Hubungi via WhatsApp
+        </a>
+    </div>
+  </div>
+</div>
+
+<div id="page-progres" class="page" style="display:none">
+  <div class="header"><h1 style="font-size:18px">Progres Iuran</h1></div>
+  <div class="container">
+    <div class="card" style="padding:10px 5px">
+      <table id="tbl-monitor">
+        <thead>
+          <tr>
+            <th align="left" style="padding-left:10px">NAMA</th>
+            <th>S</th><th>S</th><th>R</th><th>K</th><th>J</th><th>S</th><th>M</th>
+            <th align="right" style="padding-right:10px">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody id="body-monitor"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="page-penerima" class="page" style="display:none">
+  <div class="header"><h1 style="font-size:18px">Daftar Penerima</h1></div>
+  <div class="container">
+    <div class="card" id="list-giliran-peserta"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ylcadlukkyposthktnkk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsY2FkbHVra3lwb3N0aGt0bmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NTAxMzIsImV4cCI6MjA5MTAyNjEzMn0.X9yvUdy92bGE9rHAtlPGZSrDj_qmCD0z6b3cara08ps';
+const headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+
+let cachePeserta = [];
+let cacheAbsensi = [];
+
+function fmt(n) { return 'Rp ' + Number(n).toLocaleString('id-ID'); }
+function inisial(nama) { return nama ? nama.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??'; }
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.getElementById('page-' + pageId).style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+  document.getElementById('nav-' + pageId).classList.add('active');
+  renderUI();
+}
+
+async function loadData() {
+  try {
+    const [resP, resA] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/peserta?select=*&order=urut.asc`, { headers }),
+      fetch(`${SUPABASE_URL}/rest/v1/absensi?select=*`, { headers })
+    ]);
+    cachePeserta = await resP.json();
+    cacheAbsensi = await resA.json();
+    document.getElementById('loading').style.display = 'none';
+    renderUI();
+  } catch (e) {
+    document.getElementById('loading').innerHTML = '<p style="color:red">Gagal terhubung ke database.</p>';
+  }
+}
+
+function renderUI() {
+  if (cachePeserta.length === 0) return;
+  
+  const tglEl = document.getElementById('date-now');
+  if(tglEl) tglEl.textContent = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+  
+  let totalKasGrup = 0;
+  let htmlAbsensi = '';
+  let htmlGiliran = '';
+
+  cachePeserta.forEach((p) => {
+    // Hitung jumlah setoran (kotak)
+    const jmlBayar = cacheAbsensi.filter(a => String(a.peserta_id) === String(p.id)).length;
+    
+    // Hitung total uang per orang
+    const totalPerOrang = jmlBayar * p.iuran;
+    
+    // Akumulasi kas grup
+    totalKasGrup += totalPerOrang;
+
+    // Render Progres Row dengan kolom TOTAL di ujung kanan
+    htmlAbsensi += `
+      <tr>
+        <td align="left" style="padding-left:10px">
+          <div class="name-cell">
+            <div class="avatar">${inisial(p.nama)}</div>
+            <div style="font-size:11px;font-weight:700;line-height:1.2">${p.nama}</div>
+          </div>
+        </td>
+        ${[1,2,3,4,5,6,7].map(n => `
+          <td align="center">
+            <div class="dot ${n <= jmlBayar ? 'active' : ''}"></div>
+          </td>`).join('')}
+        <td align="right" style="padding-right:10px">
+          <div style="font-size:11px; font-weight:800; color:var(--green)">${fmt(totalPerOrang)}</div>
+        </td>
+      </tr>`;
+
+    // Render Penerima List
+    htmlGiliran += `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:24px;height:24px;border-radius:50%;background:${p.sudah_terima ? 'var(--bg)' : 'var(--blue-bg)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--blue-text)">${p.urut}</div>
+            <span style="font-size:13px; font-weight:600; color:${p.sudah_terima ? 'var(--text2)' : 'var(--text)'}">${p.nama}</span>
+        </div>
+        <span class="badge ${p.sudah_terima ? 'badge-done' : 'badge-wait'}">${p.sudah_terima ? 'Selesai' : 'Menunggu'}</span>
+      </div>`;
+  });
+
+  // Update elemen Dashboard
+  document.getElementById('total-kas').textContent = fmt(totalKasGrup);
+  document.getElementById('count-peserta').textContent = cachePeserta.length;
+  
+  // Update isi tabel dan list
+  document.getElementById('body-monitor').innerHTML = htmlAbsensi;
+  document.getElementById('list-giliran-peserta').innerHTML = htmlGiliran;
+
+  // Update info giliran selanjutnya
+  const next = cachePeserta.find(p => !p.sudah_terima);
+  if(next) {
+    document.getElementById('next-turn-card').style.display = 'block';
+    document.getElementById('next-info').textContent = next.nama;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
