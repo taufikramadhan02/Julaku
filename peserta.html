@@ -6,6 +6,19 @@
 <title>Pantau Jula-Jula</title>
 <link rel="icon" href="icon-peserta.png">
 <link rel="apple-touch-icon" href="icon-peserta.png">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignal = window.OneSignal || [];
+  OneSignal.push(function() {
+    OneSignal.init({
+      appId: "MASUKKAN-APP-ID-ONESIGNAL-BOSKU-DI-SINI",
+      safari_web_id: "MASUKKAN-ID-SAFARI-JIKA-ADA",
+      notifyButton: {
+        enable: true, // Akan muncul tombol lonceng kecil di pojok bawah
+      },
+    });
+  });
+</script>
 <style>
 :root{
   --bg:#f8f9fa;--surface:#fff;--border:rgba(0,0,0,0.08);
