@@ -82,20 +82,45 @@ td{padding:12px 5px; border-bottom:1px solid var(--border)}
   <div class="container">
     <div class="card">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center">
+            <div style="background:var(--bg);padding:15px;border-radius:12px;grid-column: span 2">
+                <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Kas Terkumpul Saat Ini</div>
+                <div id="total-kas" style="font-size:24px;font-weight:800;color:var(--green);margin-top:5px">Rp 0</div>
+            </div>
             <div style="background:var(--bg);padding:15px;border-radius:12px">
-                <div style="font-size:10px;color:var(--text2);text-transform:uppercase">Kas Terkumpul</div>
-                <div id="total-kas" style="font-size:16px;font-weight:700;color:var(--green);margin-top:5px">Rp 0</div>
+                <div style="font-size:10px;color:var(--text2);text-transform:uppercase">Target Total</div>
+                <div id="target-kas" style="font-size:14px;font-weight:700;margin-top:5px;color:var(--blue-text)">Rp 0</div>
             </div>
             <div style="background:var(--bg);padding:15px;border-radius:12px">
                 <div style="font-size:10px;color:var(--text2);text-transform:uppercase">Total Peserta</div>
-                <div id="count-peserta" style="font-size:16px;font-weight:700;margin-top:5px">0</div>
+                <div id="count-peserta" style="font-size:14px;font-weight:700;margin-top:5px">0</div>
+            </div>
+            <div style="background:var(--bg);padding:12px;border-radius:12px">
+                <div style="font-size:9px;color:var(--text2);text-transform:uppercase">Sudah Terima</div>
+                <div id="count-sudah" style="font-size:16px;font-weight:700;color:var(--green);margin-top:5px">0</div>
+            </div>
+            <div style="background:var(--bg);padding:12px;border-radius:12px">
+                <div style="font-size:9px;color:var(--text2);text-transform:uppercase">Belum Terima</div>
+                <div id="count-belum" style="font-size:16px;font-weight:700;color:var(--red);margin-top:5px">0</div>
             </div>
         </div>
     </div>
-    <div class="card" id="next-turn-card" style="background:var(--blue-bg); border:none; display:none">
-        <div style="font-size:12px;color:var(--blue-text);font-weight:700;margin-bottom:4px">📢 Giliran Selanjutnya:</div>
-        <div id="next-info" style="font-size:16px;font-weight:800;color:var(--blue-text)">-</div>
+    
+  <div class="card" id="next-turn-card" style="background:var(--blue-bg); border:none; display:none; padding:18px">
+    <div style="font-size:10px;color:var(--blue-text);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;opacity:0.8">📢 Giliran Selanjutnya</div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+        <div style="flex:1">
+            <div id="next-info" style="font-size:18px;font-weight:800;color:var(--blue-text);margin-bottom:4px">-</div>
+            <div id="next-date" style="font-size:12px;color:var(--blue-text);font-weight:600;opacity:0.8">📅 -</div>
+        </div>
+        
+        <div id="timer-container" style="text-align:right; min-width:100px">
+            <div id="timer-label" style="font-size:9px;color:var(--blue-text);text-transform:uppercase;font-weight:700;margin-bottom:2px">Mencair Dalam:</div>
+            <div id="next-timer" style="font-size:13px;font-weight:800;color:var(--blue-text);background:rgba(255,255,255,0.4);padding:6px 10px;border-radius:8px;display:inline-block;line-height:1.2">-</div>
+        </div>
     </div>
+</div>
+    
     <div class="card">
         <div class="card-title">💡 Info</div>
         <p style="font-size:12px; color:var(--text2); margin-bottom: 15px;">Jika ada kesalahan data iuran, silakan hubungi Admin melalui tombol di bawah.</p>
@@ -193,16 +218,32 @@ function renderUI() {
   const tglEl = document.getElementById('date-now');
   if(tglEl) tglEl.textContent = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
   
+  // Konfigurasi Tanggal Mulai Jula-Jula
+  const tanggalMulai = new Date('2026-04-12T00:00:00'); 
+
   let totalKasGrup = 0;
+  let targetTotalKas = 0;
+  let sudahTerima = 0;
+  let belumTerima = 0;
   let htmlAbsensi = '';
   let htmlGiliran = '';
 
   cachePeserta.forEach((p) => {
+    // 1. Hitung Pembayaran & Kas
     const jmlBayar = cacheAbsensi.filter(a => String(a.peserta_id) === String(p.id)).length;
     const totalPerOrang = jmlBayar * p.iuran;
     totalKasGrup += totalPerOrang;
+    targetTotalKas += (p.iuran * 7);
 
-    // LOGIKA FILTER: Hanya tambahkan ke HTML jika nama cocok dengan pencarian
+    // 2. Hitung Status Penerima
+    if (p.sudah_terima) { sudahTerima++; } else { belumTerima++; }
+
+    // 3. Hitung Tanggal untuk List Penerima
+    let tglCair = new Date(tanggalMulai);
+    tglCair.setDate(tanggalMulai.getDate() + ((p.urut - 1) * 7));
+    const tglFormat = tglCair.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    // 4. Render Tabel Progres (Tab Progres)
     if (p.nama.toLowerCase().includes(searchQuery)) {
         htmlAbsensi += `
           <tr>
@@ -219,38 +260,78 @@ function renderUI() {
           </tr>`;
     }
 
-    // List Penerima (biasanya tidak difilter, tapi kalau mau tinggal masukkan ke blok IF di atas)
+    // 5. Render List Penerima (Tab Penerima)
     htmlGiliran += `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:10px">
             <div style="width:24px;height:24px;border-radius:50%;background:${p.sudah_terima ? 'var(--bg)' : 'var(--blue-bg)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--blue-text)">${p.urut}</div>
-            <span style="font-size:13px; font-weight:600; color:${p.sudah_terima ? 'var(--text2)' : 'var(--text)'}">${p.nama}</span>
+            <div>
+                <div style="font-size:13px; font-weight:600; color:${p.sudah_terima ? 'var(--text2)' : 'var(--text)'}">${p.nama}</div>
+                <div style="font-size:10px; color:var(--blue); font-weight:500">📅 ${tglFormat}</div>
+            </div>
         </div>
         <span class="badge ${p.sudah_terima ? 'badge-done' : 'badge-wait'}">${p.sudah_terima ? 'Selesai' : 'Menunggu'}</span>
       </div>`;
   });
 
-  // Update elemen-elemen
-  const totalKasEl = document.getElementById('total-kas');
-  if(totalKasEl) totalKasEl.textContent = fmt(totalKasGrup);
-  
-  const countPesertaEl = document.getElementById('count-peserta');
-  if(countPesertaEl) countPesertaEl.textContent = cachePeserta.length;
+  // UPDATE ELEMEN DASHBOARD
+  document.getElementById('total-kas').textContent = fmt(totalKasGrup);
+  document.getElementById('target-kas').textContent = fmt(targetTotalKas);
+  document.getElementById('count-peserta').textContent = cachePeserta.length;
+  document.getElementById('count-sudah').textContent = sudahTerima;
+  document.getElementById('count-belum').textContent = belumTerima;
+  document.getElementById('body-monitor').innerHTML = htmlAbsensi || '<tr><td colspan="9" align="center" style="padding:20px; color:var(--text2)">Nama tidak ditemukan</td></tr>';
+  document.getElementById('list-giliran-peserta').innerHTML = htmlGiliran;
 
-  const bodyMon = document.getElementById('body-monitor');
-  if(bodyMon) bodyMon.innerHTML = htmlAbsensi || '<tr><td colspan="9" align="center" style="padding:20px; color:var(--text2)">Nama tidak ditemukan</td></tr>';
-
-  const listGil = document.getElementById('list-giliran-peserta');
-  if(listGil) listGil.innerHTML = htmlGiliran;
-
+  // ==========================================
+  // MASUKKAN KODE LOGIKA TIMER YANG BOSKU MAKSUD DI SINI
+  // ==========================================
   const next = cachePeserta.find(p => !p.sudah_terima);
   const nextCard = document.getElementById('next-turn-card');
   const nextInfo = document.getElementById('next-info');
-  if(next && nextCard && nextInfo) {
+  const nextDate = document.getElementById('next-date');
+  const nextTimer = document.getElementById('next-timer');
+  const timerLabel = document.getElementById('timer-label');
+
+  if (window.countdownInterval) clearInterval(window.countdownInterval);
+
+  if(next && nextCard) {
     nextCard.style.display = 'block';
     nextInfo.textContent = next.nama;
+
+    let targetTgl = new Date(tanggalMulai);
+    targetTgl.setDate(tanggalMulai.getDate() + ((next.urut - 1) * 7));
+    nextDate.textContent = '📅 ' + targetTgl.toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+
+    window.countdownInterval = setInterval(() => {
+        const sekarang = new Date().getTime();
+        const selisih = targetTgl.getTime() - sekarang;
+
+        if (selisih <= 0) {
+            if(timerLabel) timerLabel.style.display = 'none';
+            nextTimer.style.background = 'var(--green)';
+            nextTimer.style.color = 'white';
+            nextTimer.style.fontSize = '12px';
+            nextTimer.innerHTML = `Hari ini <b>${next.nama}</b><br>akan terima uang`;
+            nextCard.style.border = '2px solid var(--green)';
+            clearInterval(window.countdownInterval);
+            return;
+        }
+
+        const hari = Math.floor(selisih / (1000 * 60 * 60 * 24));
+        const jam = Math.floor((selisih % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const menit = Math.floor((selisih % (1000 * 60 * 60)) / (1000 * 60));
+        const detik = Math.floor((selisih % (1000 * 60)) / 1000);
+
+        if(timerLabel) timerLabel.style.display = 'block';
+        nextTimer.textContent = `${hari}h ${jam}j ${menit}m ${detik}s`;
+    }, 1000);
+  } else if (nextCard) {
+    nextCard.style.display = 'none';
   }
 }
+
+
 
 loadData();
 </script>
