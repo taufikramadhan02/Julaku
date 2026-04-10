@@ -422,7 +422,7 @@ async function kirimNotifMassal() {
   if(!confirm("Kirim notifikasi pengingat ke semua HP peserta?")) return;
 
   const data = {
-    app_id: "APP_ID_ONESIGNAL_BOSKU",
+    app_id: "f973ec81-ed41-478e-b166-0abe04b0411b",
     included_segments: ["Total Subscriptions"],
     headings: {"en": "Tagihan Jula-Jula! 💸"},
     contents: {"en": "Halo! Jangan lupa setoran jula-jula hari ini ya. Cek progres kamu di aplikasi."},
@@ -434,7 +434,7 @@ async function kirimNotifMassal() {
       method: "POST",
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Authorization": "Basic REST_API_KEY_ONESIGNAL_BOSKU" // Ambil di Settings > Keys & IDs
+        "Authorization": "os_v2_app_7fz6zapnifdy5mlgbk7ajmcbdnrfoi7nzzzuch5xjht2rrkhrxvgpiytyd5ga6tktrws722zirjygc3piuu4t3wxbkwufixbf5dtnxy" // Ambil di Settings > Keys & IDs
       },
       body: JSON.stringify(data)
     });
