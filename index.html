@@ -143,6 +143,11 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);backgro
     <div class="stat-card"><div class="stat-label">Belum bayar</div><div class="skeleton" style="width:40px;height:24px"></div></div>
     <div class="stat-card"><div class="stat-label">Terkumpul bulan ini</div><div class="skeleton" style="width:80px;height:24px"></div></div>
   </div>
+  <div>
+    <button onclick="kirimNotifMassal()" style="background:var(--red); color:white; padding:10px; border-radius:8px; border:none; cursor:pointer">
+    📢 Kirim Notifikasi Bayar
+</button>
+  </div>
   <div class="two-col">
     <div class="card">
       <div class="card-header"><span class="card-title">Pembayaran hari ini</span><span id="tanggal-hari-ini" style="font-size:11px;color:var(--text2)"></span></div>
@@ -413,6 +418,33 @@ async function loadAll() {
   }
 }
 
+
+async function kirimNotifMassal() {
+  if(!confirm("Kirim notifikasi pengingat ke semua HP peserta?")) return;
+
+  const data = {
+    app_id: "APP_ID_ONESIGNAL_BOSKU",
+    included_segments: ["Total Subscriptions"],
+    headings: {"en": "Tagihan Jula-Jula! 💸"},
+    contents: {"en": "Halo! Jangan lupa setoran jula-jula hari ini ya. Cek progres kamu di aplikasi."},
+    url: "https://taufik.github.io/jula-jula/peserta.html"
+  };
+
+  try {
+    const response = await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": "Basic REST_API_KEY_ONESIGNAL_BOSKU" // Ambil di Settings > Keys & IDs
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if(response.ok) alert("Notifikasi terkirim!");
+  } catch (e) {
+    alert("Gagal kirim notifikasi");
+  }
+}
 
 function sudahBayar(pid, tgl) { return absensiSet.has(pid + '_' + tgl); }
 function getDaysInMonth(ym) { const [y, m] = ym.split('-'); return new Date(y, m, 0).getDate(); }
