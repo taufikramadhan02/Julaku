@@ -148,6 +148,9 @@ td{padding:12px 5px; border-bottom:1px solid var(--border)}
 <div id="page-progres" class="page" style="display:none">
   <div class="header"><h1 style="font-size:18px">Progres Iuran</h1></div>
   <div class="container">
+    <div id="status-minggu-ini" style="background:var(--blue-bg); color:var(--blue-text); padding:12px; border-radius:12px; margin-bottom:15px; font-size:13px; font-weight:bold; text-align:center; border:1px solid var(--border)">
+    📊 Memuat status periode...
+    </div>
     <div style="margin-bottom: 15px;">
         <input type="text" id="search-input" onkeyup="filterPeserta()" placeholder="🔍 Cari nama peserta..." 
                style="width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; outline: none;">
@@ -224,9 +227,34 @@ async function loadData() {
   }
 }
 
+function updateMingguByPenerima() {
+    // 1. Hitung berapa banyak peserta yang sudah menerima uang
+    const jumlahSelesai = cachePeserta.filter(p => p.sudah_terima === true).length;
+    
+    // 2. Minggu saat ini adalah jumlah yang selesai + 1
+    // Contoh: 0 selesai = Minggu 1, 1 selesai = Minggu 2
+    const mingguSekarang = jumlahSelesai + 1;
+    
+    const targetEl = document.getElementById('status-minggu-ini');
+    if (targetEl) {
+        // Cek jika semua sudah selesai
+        if (jumlahSelesai >= cachePeserta.length) {
+            targetEl.style.background = 'var(--green-bg)';
+            targetEl.style.color = 'var(--green-text)';
+            targetEl.innerHTML = `🎉 Semua Putaran Jula-Jula Selesai!`;
+        } else {
+            targetEl.innerHTML = `📊 Periode Saat Ini: <span">Minggu ke-${mingguSekarang}</span>`;
+        }
+    }
+}
+
+
+
 // 4. RENDER UI (DENGAN LOGIKA FILTER)
 function renderUI() {
   if (cachePeserta.length === 0) return;
+
+  updateMingguByPenerima();
 
   const tglEl = document.getElementById('date-now');
   if(tglEl) tglEl.textContent = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});

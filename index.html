@@ -143,11 +143,6 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);backgro
     <div class="stat-card"><div class="stat-label">Belum bayar</div><div class="skeleton" style="width:40px;height:24px"></div></div>
     <div class="stat-card"><div class="stat-label">Terkumpul bulan ini</div><div class="skeleton" style="width:80px;height:24px"></div></div>
   </div>
-  <div>
-    <button onclick="kirimNotifMassal()" style="background:var(--red); color:white; padding:10px; border-radius:8px; border:none; cursor:pointer">
-    📢 Kirim Notifikasi Bayar
-    </button>
-  </div>
   <div class="two-col">
     <div class="card">
       <div class="card-header"><span class="card-title">Pembayaran hari ini</span><span id="tanggal-hari-ini" style="font-size:11px;color:var(--text2)"></span></div>
@@ -167,18 +162,6 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);backgro
 <!-- PESERTA -->
 <div id="tab-peserta" style="display:none">
   <div class="card">
-    <div class="card-header"><span class="card-title">Tambah peserta baru</span></div>
-    <div class="input-row">
-      <div class="input-group"><label>Nama peserta</label><input type="text" id="inp-nama" placeholder="Nama lengkap"></div>
-      <div class="input-group"><label>No. HP</label><input type="text" id="inp-hp" placeholder="08xxxxxxxxxx"></div>
-    </div>
-    <div class="input-row">
-      <div class="input-group"><label>Iuran harian (Rp)</label><input type="number" id="inp-iuran" value="50000"></div>
-      <div class="input-group"><label>No. urut giliran</label><input type="number" id="inp-urut" placeholder="Auto"></div>
-    </div>
-    <div class="form-actions"><button class="btn primary" id="btn-tambah" onclick="tambahPeserta()">+ Tambah</button></div>
-  </div>
-  <div class="card">
     <div class="card-header"><span class="card-title">Daftar peserta</span><span id="jumlah-peserta" style="font-size:11px;color:var(--text2)"></span></div>
     <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nama</th><th>HP</th><th>Iuran/hari</th><th>Total bayar</th><th>Status</th><th></th></tr></thead><tbody id="tbl-peserta"></tbody></table></div>
   </div>
@@ -191,11 +174,10 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);backgro
       <span class="card-title">Pembayaran harian</span>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <input type="text" id="cari-peserta" placeholder="Cari nama..." style="width:130px;padding:6px 9px;font-size:11px" oninput="filterAbsensi()">
-        <button class="btn small green" onclick="tandaiSemuaBayar()">Semua bayar</button>
         <button class="btn small primary" onclick="resetSemuaIuran()">Mulai Minggu Baru (Reset Semua)</button>
       </div>
     </div>
-    <div style="margin-bottom:8px;font-size:11px;color:var(--text2)">Ketuk nama untuk lihat riwayat kalender.</div>
+    <div style="margin-bottom:8px;font-size:11px;color:var(--text2)">Klik tombol pembayaran untuk menandai.</div>
     <div class="tbl-wrap"><table><thead><tr><th>Peserta</th><th>Iuran</th><th>Hari ini</th><th>Progres bulan</th><th></th></tr></thead><tbody id="tbl-absensi"></tbody></table></div>
   </div>
   <div class="card" id="panel-riwayat" style="display:none">
@@ -418,32 +400,7 @@ async function loadAll() {
   }
 }
 
-async function kirimNotifMassal() {
-  if(!confirm("Kirim notifikasi pengingat ke semua HP peserta?")) return;
 
-  const data = {
-    app_id: "f973ec81-ed41-478e-b166-0abe04b0411b",
-    included_segments: ["Total Subscriptions"],
-    headings: {"en": "Tagihan Jula-Jula! 💸"},
-    contents: {"en": "Halo! Jangan lupa setoran jula-jula hari ini ya. Cek progres kamu di aplikasi."},
-    url: "https://taufik.github.io/jula-jula/peserta.html"
-  };
-
-  try {
-    const response = await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Authorization": "os_v2_app_7fz6zapnifdy5mlgbk7ajmcbdnrfoi7nzzzuch5xjht2rrkhrxvgpiytyd5ga6tktrws722zirjygc3piuu4t3wxbkwufixbf5dtnxy" // Ambil di Settings > Keys & IDs
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if(response.ok) alert("Notifikasi terkirim!");
-  } catch (e) {
-    alert("Gagal kirim notifikasi");
-  }
-}
 
 function sudahBayar(pid, tgl) { return absensiSet.has(pid + '_' + tgl); }
 function getDaysInMonth(ym) { const [y, m] = ym.split('-'); return new Date(y, m, 0).getDate(); }
@@ -488,8 +445,6 @@ function renderDashboard() {
     if (statsRow) {
       statsRow.innerHTML = `
         <div class="stat-card"><div class="stat-label">Total peserta</div><div class="stat-val">${totalPeserta}</div></div>
-        <div class="stat-card"><div class="stat-label">Sudah bayar</div><div class="stat-val" style="color:#1D9E75">${jumlahSudahBayarHariIni}</div></div>
-        <div class="stat-card"><div class="stat-label">Belum bayar</div><div class="stat-val" style="color:${belumBayarHariIni > 0 ? '#BA7517' : 'var(--text)'}">${belumBayarHariIni}</div></div>
         <div class="stat-card"><div class="stat-label">Kas Terkumpul</div><div class="stat-val" style="font-size:13px; color:#1D9E75">${fmt(totalTerkumpulBulanIni)}</div></div>`;
     }
 
@@ -638,60 +593,60 @@ function renderPeserta() {
   tblPeserta.innerHTML = html;
 }
 
-async function tambahPeserta() {
-  const nama = document.getElementById('inp-nama').value.trim();
-  const hp = document.getElementById('inp-hp').value.trim();
-  const iuran = parseInt(document.getElementById('inp-iuran').value) || 50000;
-  const urut = parseInt(document.getElementById('inp-urut').value) || (pesertaList.length + 1);
+// async function tambahPeserta() {
+//   const nama = document.getElementById('inp-nama').value.trim();
+//   const hp = document.getElementById('inp-hp').value.trim();
+//   const iuran = parseInt(document.getElementById('inp-iuran').value) || 50000;
+//   const urut = parseInt(document.getElementById('inp-urut').value) || (pesertaList.length + 1);
 
-  if (!nama) { showToast('Nama tidak boleh kosong', 'error'); return; }
+//   if (!nama) { showToast('Nama tidak boleh kosong', 'error'); return; }
 
-  const btn = document.getElementById('btn-tambah');
-  btn.disabled = true; 
-  btn.textContent = 'Menyimpan...';
-  setDbStatus('saving');
+//   const btn = document.getElementById('btn-tambah');
+//   btn.disabled = true; 
+//   btn.textContent = 'Menyimpan...';
+//   setDbStatus('saving');
 
-  try {
-    // Gunakan array [ {} ] untuk POST ke Supabase
-    // Tambahkan header 'Prefer': 'return=representation' agar Supabase mengembalikan data yang baru dibuat
-    await sbFetch('peserta', 'POST', [{ 
-      nama: nama, 
-      hp: hp, 
-      iuran: iuran, 
-      urut: urut, 
-      sudah_terima: false 
-    }]);
+//   try {
+//     // Gunakan array [ {} ] untuk POST ke Supabase
+//     // Tambahkan header 'Prefer': 'return=representation' agar Supabase mengembalikan data yang baru dibuat
+//     await sbFetch('peserta', 'POST', [{ 
+//       nama: nama, 
+//       hp: hp, 
+//       iuran: iuran, 
+//       urut: urut, 
+//       sudah_terima: false 
+//     }]);
 
-    // DARIPADA ambil dari 'result[0]', lebih aman ambil ulang semua data terbaru dari database
-    const dataTerbaru = await sbFetch('peserta?select=*&order=urut.asc');
-    pesertaList = dataTerbaru || [];
+//     // DARIPADA ambil dari 'result[0]', lebih aman ambil ulang semua data terbaru dari database
+//     const dataTerbaru = await sbFetch('peserta?select=*&order=urut.asc');
+//     pesertaList = dataTerbaru || [];
 
-    // Reset Form
-    document.getElementById('inp-nama').value = '';
-    document.getElementById('inp-hp').value = '';
-    document.getElementById('inp-urut').value = '';
+//     // Reset Form
+//     document.getElementById('inp-nama').value = '';
+//     document.getElementById('inp-hp').value = '';
+//     document.getElementById('inp-urut').value = '';
 
-    setDbStatus('connected');
-    showToast(nama + ' berhasil ditambahkan!', 'success');
+//     setDbStatus('connected');
+//     showToast(nama + ' berhasil ditambahkan!', 'success');
     
-    // Update tampilan
-    renderPeserta();
-    renderDashboard();
+//     // Update tampilan
+//     renderPeserta();
+//     renderDashboard();
     
-  } catch (e) {
-    console.error("Detail Error:", e);
-    // Jika data masuk tapi masih error, kita paksa refresh list saja
-    const dataTerbaru = await sbFetch('peserta?select=*&order=urut.asc');
-    pesertaList = dataTerbaru || [];
-    renderPeserta();
+//   } catch (e) {
+//     console.error("Detail Error:", e);
+//     // Jika data masuk tapi masih error, kita paksa refresh list saja
+//     const dataTerbaru = await sbFetch('peserta?select=*&order=urut.asc');
+//     pesertaList = dataTerbaru || [];
+//     renderPeserta();
     
-    setDbStatus('connected');
-    showToast('Data tersimpan (dengan penyesuaian)', 'info');
-  } finally {
-    btn.disabled = false; 
-    btn.textContent = '+ Tambah';
-  }
-}
+//     setDbStatus('connected');
+//     showToast('Data tersimpan (dengan penyesuaian)', 'info');
+//   } finally {
+//     btn.disabled = false; 
+//     btn.textContent = '+ Tambah';
+//   }
+// }
 
 async function hapusPeserta(id) {
   if (!confirm('Hapus peserta ini? Semua data absensinya juga akan terhapus.')) return;
@@ -1032,79 +987,6 @@ async function batalBayar(pid) {
     showToast('Gagal membatalkan: ' + e.message, 'error');
   }
 }
-
-async function tandaiSemuaBayar() {
-  const belum = pesertaList.filter(p => !sudahBayar(p.id, todayKey));
-  if (belum.length === 0) { showToast('Semua sudah bayar!'); return; }
-  setDbStatus('saving');
-  try {
-    const rows = belum.map(p => ({ peserta_id: p.id, tanggal: todayKey }));
-    await sbFetch('absensi', 'POST', rows);
-    belum.forEach(p => absensiSet.add(p.id + '_' + todayKey));
-    setDbStatus('connected');
-    showToast('Semua peserta sudah bayar ✓', 'success');
-    renderAbsensi(); renderDashboard();
-  } catch (e) {
-    setDbStatus('error');
-    showToast('Gagal: ' + e.message, 'error');
-  }
-}
-
-async function lihatRiwayat(pid) {
-  const p = pesertaList.find(x => x.id === pid);
-  document.getElementById('riwayat-nama').textContent = 'Riwayat — ' + p.nama;
-  document.getElementById('riwayat-konten').innerHTML = '<div class="skeleton"></div><div class="skeleton" style="margin-top:6px"></div>';
-  document.getElementById('panel-riwayat').style.display = '';
-  try {
-    const rows = await sbFetch('absensi?peserta_id=eq.' + pid + '&tanggal=gte.' + bulanIni + '-01&tanggal=lte.' + bulanIni + '-31&select=tanggal');
-    rows.forEach(r => absensiSet.add(pid + '_' + r.tanggal));
-    const days = getDaysInMonth(bulanIni);
-    const weekDays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-    const firstDay = new Date(bulanIni + '-01').getDay();
-    let html = `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">${new Date(bulanIni + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</div>`;
-    html += '<div class="absen-grid">';
-    weekDays.forEach(d => { html += `<div class="day-header">${d}</div>`; });
-    for (let b = 0; b < firstDay; b++) html += '<div></div>';
-    for (let d = 1; d <= days; d++) {
-      const tgl = bulanIni + '-' + String(d).padStart(2, '0');
-      const bayar = sudahBayar(pid, tgl);
-      const isFuture = tgl > todayKey;
-      const isToday = tgl === todayKey;
-      html += `<div class="absen-day ${isFuture ? 'future' : bayar ? 'paid' : 'unpaid'} ${isToday ? 'today' : ''}" onclick="${!isFuture ? `toggleRiwayat(${pid},'${tgl}')` : ''}">${d}</div>`;
-    }
-    html += '</div>';
-    const { total, count } = totalBayarBulan(pid);
-    html += `<div style="margin-top:12px;display:flex;gap:14px;font-size:12px;flex-wrap:wrap">
-      <span>Hadir: <b style="color:#1D9E75">${count} hari</b></span>
-      <span>Total: <b style="color:#1D9E75">${fmt(total)}</b></span>
-      <span>Iuran: <b>${fmt(p.iuran)}/hari</b></span></div>`;
-    document.getElementById('riwayat-konten').innerHTML = html;
-    document.getElementById('panel-riwayat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } catch (e) {
-    document.getElementById('riwayat-konten').innerHTML = '<div style="color:#A32D2D;font-size:12px">Gagal memuat riwayat</div>';
-  }
-}
-
-async function toggleRiwayat(pid, tgl) {
-  const key = pid + '_' + tgl;
-  setDbStatus('saving');
-  try {
-    if (absensiSet.has(key)) {
-      await sbFetch('absensi?peserta_id=eq.' + pid + '&tanggal=eq.' + tgl, 'DELETE');
-      absensiSet.delete(key);
-    } else {
-      await sbFetch('absensi', 'POST', { peserta_id: pid, tanggal: tgl });
-      absensiSet.add(key);
-    }
-    setDbStatus('connected');
-    lihatRiwayat(pid); renderAbsensi();
-  } catch (e) {
-    setDbStatus('error');
-    showToast('Gagal: ' + e.message, 'error');
-  }
-}
-
-function tutupRiwayat() { document.getElementById('panel-riwayat').style.display = 'none'; }
 
 function renderGiliran() {
   const sorted = pesertaList.slice().sort((a, b) => a.urut - b.urut);
