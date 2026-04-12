@@ -170,21 +170,36 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);backgro
 <!-- ABSENSI -->
 <div id="tab-absensi" style="display:none">
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" style="margin-bottom:10px">
       <span class="card-title">Pembayaran harian</span>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <input type="text" id="cari-peserta" placeholder="Cari nama..." style="width:130px;padding:6px 9px;font-size:11px" oninput="filterAbsensi()">
+    </div>
+
+    <div style="margin-bottom:15px">
+      <div style="position:relative">
+        <input type="text" id="cari-peserta" placeholder="🔍 Cari nama peserta..." 
+               style="width:100%; padding:10px 12px; font-size:13px; border-radius:10px; border:0.5px solid var(--border); background:var(--surface2); color:var(--text); outline:none" 
+               oninput="filterAbsensi()">
       </div>
     </div>
-    <div style="margin-bottom:8px;font-size:11px;color:var(--text2)">Klik tombol pembayaran untuk menandai.</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Peserta</th><th>Iuran</th><th>Hari ini</th><th>Progres bulan</th><th></th></tr></thead><tbody id="tbl-absensi"></tbody></table></div>
-  </div>
-  <div class="card" id="panel-riwayat" style="display:none">
-    <div class="card-header"><span class="card-title" id="riwayat-nama">Riwayat</span><button class="btn small" onclick="tutupRiwayat()">Tutup</button></div>
-    <div id="riwayat-konten"></div>
+
+    <div style="margin-bottom:12px; font-size:11px; color:var(--text2); display:flex; align-items:center; gap:5px">
+      <span>💡</span> Klik nomor kotak untuk menambah/membatalkan setoran.
+    </div>
+    
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Peserta</th>
+            <th>Iuran</th>
+            <th style="min-width:110px">Total</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-absensi"></tbody>
+      </table>
+    </div>
   </div>
 </div>
-
 <!-- GILIRAN -->
 <div id="tab-giliran" style="display:none">
   <div class="card">
