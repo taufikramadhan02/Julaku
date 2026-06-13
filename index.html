@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Admin Jula-Jula</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <link rel="icon" href="icon-admin.png">
 <link rel="apple-touch-icon" href="icon-admin.png">
 <style>
@@ -215,31 +216,22 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--blue);backgro
 <!-- EKSPOR -->
 <div id="tab-ekspor" style="display:none">
   <div class="card">
-    <div class="card-header"><span class="card-title">Ekspor data ke Excel</span></div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Unduh data sebagai file Excel untuk disimpan atau dibagikan.</p>
+    <div class="card-header"><span class="card-title">Ekspor Data ke PDF</span></div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Unduh laporan dalam format PDF untuk dicetak atau dibagikan via WhatsApp.</p>
     <div class="export-item">
-      <div><div class="export-item-title">Rekap lengkap bulan ini</div><div class="export-item-desc">Absensi harian + rekap peserta + jadwal giliran</div></div>
-      <button class="btn green" onclick="eksporRekap()">⬇ Unduh</button>
+      <div><div class="export-item-title">Rekap Lengkap Pembayaran</div><div class="export-item-desc">Laporan total pembayaran, status, dan jadwal urutan giliran</div></div>
+      <button class="btn green" onclick="eksporRekap()">⬇ Unduh PDF</button>
     </div>
     <div class="export-item">
-      <div><div class="export-item-title">Data peserta</div><div class="export-item-desc">Daftar semua peserta + total pembayaran</div></div>
-      <button class="btn primary" onclick="eksporPeserta()">⬇ Unduh</button>
+      <div><div class="export-item-title">Data Peserta Aktif</div><div class="export-item-desc">Daftar semua peserta, nomor HP, iuran harian, dan total bayar</div></div>
+      <button class="btn primary" onclick="eksporPeserta()">⬇ Unduh PDF</button>
     </div>
     <div class="export-item">
-      <div><div class="export-item-title">Absensi detail bulanan</div><div class="export-item-desc">Tiap hari sebagai kolom, tiap peserta sebagai baris</div></div>
-      <button class="btn amber" onclick="eksporAbsensiDetail()">⬇ Unduh</button>
+      <div><div class="export-item-title">Riwayat Detail Setoran</div><div class="export-item-desc">Detail matriks setoran (Kotak 1-7) yang telah diselesaikan peserta</div></div>
+      <button class="btn amber" onclick="eksporAbsensiDetail()">⬇ Unduh PDF</button>
     </div>
   </div>
-  <div class="card">
-    <div class="card-header"><span class="card-title">Info database</span></div>
-    <div style="font-size:12px;color:var(--text2);line-height:1.9">
-      <div>• Data tersimpan di <b style="color:var(--text)">Supabase</b> — bisa diakses dari HP manapun.</div>
-      <div>• Setiap perubahan langsung tersinkron ke server secara otomatis.</div>
-      <div>• Data tidak akan hilang meski ganti HP, hapus cache, atau reinstall browser.</div>
-      <div>• Pastikan ada koneksi internet saat menggunakan aplikasi ini.</div>
-    </div>
-  </div>
-</div>
+  ...
 
 </div>
 </div>
@@ -1099,72 +1091,170 @@ async function tandaiTerima(pid) {
 
 function bulanLabel() { return new Date(bulanIni + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); }
 
+// GANTI fungsi ekspor lama dengan fungsi berbasis jsPDF di bawah ini:
+
+function inisialisasiPDF(judulLaporan) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  
+  // Header Laporan
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("KAS JULA-JULA (ARISAN HARIAN)", 14, 15);
+  
+  doc.setFontSize(10);
+  doc.setFont("Helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Jenis Laporan: ${judulLaporan}`, 14, 21);
+  doc.text(`Tanggal Cetak: ${today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute:'2-digit' })} WIB`, 14, 26);
+  
+  // Garis Pembatas
+  doc.setDrawColor(200);
+  doc.line(14, 29, 196, 29);
+  
+  return doc;
+}
+
 function eksporRekap() {
-  const wb = XLSX.utils.book_new();
-  const days = getDaysInMonth(bulanIni);
-  const header1 = ['No', 'Nama', 'HP', 'Iuran/Hari'];
-  for (let d = 1; d <= days; d++) header1.push(String(d));
-  header1.push('Total Hadir', 'Total Bayar (Rp)');
-  const rows1 = [header1];
-  pesertaList.forEach((p, i) => {
-    const row = [i + 1, p.nama, p.hp, p.iuran]; let count = 0;
-    for (let d = 1; d <= days; d++) {
-      const tgl = bulanIni + '-' + String(d).padStart(2, '0');
-      const bayar = sudahBayar(p.id, tgl);
-      row.push(bayar ? '✓' : ''); if (bayar) count++;
-    }
-    row.push(count, count * p.iuran); rows1.push(row);
+  showToast('Membuat PDF...', 'info');
+  const doc = inisialisasiPDF('Rekap Gabungan Pembayaran & Giliran');
+  
+  // Konten 1: Ringkasan Tabel Utama
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(0);
+  doc.text("1. Ringkasan Kas & Status Peserta", 14, 36);
+  
+  const bodyPeserta = pesertaList.map((p, i) => {
+    const rekap = totalBayarBulan(p.id);
+    return [
+      i + 1,
+      p.nama,
+      p.hp || '-',
+      p.iuran.toLocaleString('id-ID'),
+      `${rekap.count}x`,
+      rekap.total.toLocaleString('id-ID'),
+      p.sudah_terima ? 'Sudah Terima' : 'Menunggu'
+    ];
   });
-  const ws1 = XLSX.utils.aoa_to_sheet(rows1);
-  XLSX.utils.book_append_sheet(wb, ws1, 'Absensi Harian');
-  const rows2 = [['No', 'Nama', 'HP', 'Iuran/Hari', 'Total Hari', 'Total Bayar', 'Status']];
-  pesertaList.forEach((p, i) => {
-    const { total, count } = totalBayarBulan(p.id);
-    rows2.push([i + 1, p.nama, p.hp, p.iuran, count, total, p.sudah_terima ? 'Sudah Terima' : 'Menunggu']);
+  
+  const totalSemuaKas = pesertaList.reduce((s, p) => s + totalBayarBulan(p.id).total, 0);
+  bodyPeserta.push([
+    { content: 'TOTAL KAS TERKUMPUL', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: totalSemuaKas.toLocaleString('id-ID'), styles: { fontStyle: 'bold' } },
+    ''
+  ]);
+
+  doc.autoTable({
+    startY: 39,
+    head: [['No', 'Nama Peserta', 'No. HP', 'Iuran/Hari (Rp)', 'Setoran', 'Total Bayar (Rp)', 'Status Jula']],
+    body: bodyPeserta,
+    theme: 'striped',
+    headStyles: { fillColor: [24, 95, 165] },
+    styles: { fontSize: 9, font: 'Helvetica' }
   });
-  rows2.push([], ['', 'Total Terkumpul', '', '', '', pesertaList.reduce((s, p) => s + totalBayarBulan(p.id).total, 0), '']);
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows2), 'Rekap Peserta');
-  const rows3 = [['Urutan', 'Nama', 'HP', 'Iuran/Hari', 'Status']];
-  pesertaList.slice().sort((a, b) => a.urut - b.urut).forEach(p => rows3.push([p.urut, p.nama, p.hp, p.iuran, p.sudah_terima ? 'Sudah Terima' : 'Menunggu']));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows3), 'Jadwal Giliran');
-  XLSX.writeFile(wb, 'JulaJula_Rekap_' + bulanIni + '.xlsx');
-  showToast('File Excel berhasil diunduh!', 'success');
+
+  // Konten 2: Urutan Giliran (Otomatis pindah halaman jika tidak muat)
+  const posisiYBaru = doc.lastAutoTable.finalY + 10;
+  doc.text("2. Daftar Urutan Giliran Nomortama", 14, posisiYBaru);
+  
+  const bodyGiliran = pesertaList
+    .slice()
+    .sort((a, b) => a.urut - b.urut)
+    .map(p => [p.urut, p.nama, p.hp || '-', p.sudah_terima ? 'Selesai (Sudah Dapat)' : 'Tunggu Antrean']);
+
+  doc.autoTable({
+    startY: posisiYBaru + 3,
+    head: [['No. Urut', 'Nama Peserta', 'No. HP', 'Status']],
+    body: bodyGiliran,
+    theme: 'grid',
+    headStyles: { fillColor: [29, 158, 117] },
+    styles: { fontSize: 9, font: 'Helvetica' }
+  });
+
+  doc.save(`JulaJula_Laporan_Lengkap_${todayKey}.pdf`);
+  showToast('PDF Berhasil diunduh!', 'success');
 }
 
 function eksporPeserta() {
-  const rows = [['No', 'Nama', 'HP', 'Iuran/Hari', 'Total Hari', 'Total Bayar', 'Urutan', 'Status']];
-  pesertaList.forEach((p, i) => {
-    const { total, count } = totalBayarBulan(p.id);
-    rows.push([i + 1, p.nama, p.hp, p.iuran, count, total, p.urut, p.sudah_terima ? 'Sudah' : 'Tunggu']);
+  showToast('Membuat PDF...', 'info');
+  const doc = inisialisasiPDF('Daftar Peserta & Akumulasi Dana');
+
+  const headers = ['No', 'Nama Peserta', 'Nomor HP', 'Nominal Iuran', 'Total Dana Masuk'];
+  const body = pesertaList.map((p, i) => {
+    const rekap = totalBayarBulan(p.id);
+    return [
+      i + 1,
+      p.nama,
+      p.hp || '-',
+      `Rp ${p.iuran.toLocaleString('id-ID')}`,
+      `Rp ${rekap.total.toLocaleString('id-ID')}`
+    ];
   });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Data Peserta');
-  XLSX.writeFile(wb, 'JulaJula_Peserta_' + todayKey + '.xlsx');
-  showToast('Data peserta diunduh!', 'success');
+
+  doc.autoTable({
+    startY: 35,
+    head: [headers],
+    body: body,
+    theme: 'striped',
+    headStyles: { fillColor: [24, 95, 165] },
+    styles: { fontSize: 10, padding: 4 }
+  });
+
+  doc.save(`JulaJula_Data_Peserta_${todayKey}.pdf`);
+  showToast('PDF Berhasil diunduh!', 'success');
 }
 
 function eksporAbsensiDetail() {
-  const days = getDaysInMonth(bulanIni);
-  const header = ['Nama'];
-  for (let d = 1; d <= days; d++) {
-    const tgl = bulanIni + '-' + String(d).padStart(2, '0');
-    header.push(d + ' (' + new Date(tgl).toLocaleDateString('id-ID', { weekday: 'short' }) + ')');
-  }
-  header.push('Total Hadir', 'Total Bayar (Rp)');
-  const rows = [header];
-  pesertaList.forEach(p => {
-    const row = [p.nama]; let count = 0;
-    for (let d = 1; d <= days; d++) {
-      const tgl = bulanIni + '-' + String(d).padStart(2, '0');
-      const bayar = sudahBayar(p.id, tgl);
-      row.push(bayar ? 'BAYAR' : ''); if (bayar) count++;
+  showToast('Membuat PDF...', 'info');
+  // Gunakan orientasi Landscape ('l') agar muat menampilkan checklist kolom kotak 1-7
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('l', 'mm', 'a4');
+  
+  // Custom Header Landscape
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("KAS JULA-JULA (ARISAN HARIAN)", 14, 15);
+  doc.setFontSize(10);
+  doc.setFont("Helvetica", "normal");
+  doc.text(`Jenis Laporan: Matriks Detail Setoran Sesi Jalan`, 14, 21);
+  doc.line(14, 24, 282, 24);
+
+  // Buat header tabel dari Kotak 1 s/d 7
+  const headers = ['Nama Peserta', 'K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7', 'Total Setoran', 'Jumlah Uang'];
+  
+  const body = pesertaList.map(p => {
+    // Hitung record absensi dari database lokal
+    const listBayar = Array.from(absensiSet).filter(key => key.startsWith(p.id + '_'));
+    const jumlahBayar = listBayar.length;
+    
+    // Bentuk baris data
+    const row = [p.nama];
+    for (let num = 1; num <= 7; num++) {
+      row.push(num <= jumlahBayar ? 'Lunas' : '-');
     }
-    row.push(count, count * p.iuran); rows.push(row);
+    row.push(`${jumlahBayar} / 7`, `Rp ${(jumlahBayar * p.iuran).toLocaleString('id-ID')}`);
+    return row;
   });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Absensi ' + bulanLabel());
-  XLSX.writeFile(wb, 'JulaJula_Detail_' + bulanIni + '.xlsx');
-  showToast('Absensi detail diunduh!', 'success');
+
+  doc.autoTable({
+    startY: 28,
+    head: [headers],
+    body: body,
+    theme: 'grid',
+    headStyles: { fillColor: [186, 117, 23], halign: 'center' },
+    columnStyles: {
+      0: { cellWidth: 50, fontStyle: 'bold' },
+      1: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'center' },
+      4: { halign: 'center' }, 5: { halign: 'center' }, 6: { halign: 'center' },
+      7: { halign: 'center' }, 8: { halign: 'center' },
+      9: { halign: 'right' }
+    },
+    styles: { fontSize: 9 }
+  });
+
+  doc.save(`JulaJula_Detail_Matriks_${todayKey}.pdf`);
+  showToast('PDF Berhasil diunduh!', 'success');
 }
 
 // Init
